@@ -11,6 +11,9 @@ export type GameState = {
   points: number
   size: number
   moves: number
+  startTime?: number
+  seed?: number
+  duration?: number
 }
 
 function getRandomTileId(): number {
@@ -433,6 +436,9 @@ export function getGameStateAsString(
   board: Board,
   points: number,
   moves: number,
+  startTime?: number,
+  seed?: number,
+  duration?: number,
 ) {
   // Convert board positions to numbers for easier serialization
   const boardNumbers = board.flat().map((tile) => tile.value) // Assuming tile.value is a number
@@ -443,6 +449,9 @@ export function getGameStateAsString(
     points,
     size: board.length, // Assuming a square board
     moves,
+    startTime,
+    seed,
+    duration,
   }
 
   // Serialize game state object to JSON and store in a cookie
@@ -470,6 +479,9 @@ export function getStateFromString(s: string): GameState {
     points: gameState.points,
     size,
     moves,
+    startTime: gameState.startTime,
+    seed: gameState.seed,
+    duration: gameState.duration,
   }
 }
 

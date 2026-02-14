@@ -26,12 +26,15 @@ import {
   getGameState,
   getHighscore,
   saveGameState,
+  saveGameToHistory,
   saveToPersistedState,
   setHighscore,
 } from "@/utils/storedState"
 import { boardContains2048Tile } from "@/utils/achievements"
 import Button from "./Button"
 import ShareButton from "./ShareButton"
+import Link from "next/link"
+import { History } from "lucide-react"
 
 export default function Game() {
   const {
@@ -44,18 +47,26 @@ export default function Game() {
   const [board, setBoard] = useState<Board>(initialBoard)
   const [points, setPoints] = useState(0)
   const [moves, setMoves] = useState(0)
+  const [startTime, setStartTime] = useState<number | undefined>(undefined)
+  const [seed, setSeed] = useState<number | undefined>(undefined)
+  const [duration, setDuration] = useState<number | undefined>(undefined)
+  const [elapsed, setElapsed] = useState<number>(0)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     async function initSavedState() {
       const gameState = await getGameState()
       if (!gameState || gameState.points == 0) {
+        setSeed(Math.floor(Math.random() * 1000000))
         setLoading(false)
         return
       }
       setBoard(gameState.board)
       setPoints(gameState.points)
       setMoves(gameState.moves)
+      setStartTime(gameState.startTime)
+      setSeed(gameState.seed)
+      setDuration(gameState.duration)
       setLoading(false)
     }
     initSavedState()
@@ -97,6 +108,55 @@ export default function Game() {
 
   const { animationSpeed, setAnimationSpeed, gamePosition, setGamePosition } =
     useSettings()
+
+  useEffect(() => {
+    if (
+      !animating &&
+      isGameOver(board) &&
+      startTime &&
+      duration === undefined
+    ) {
+      const stopTime = Date.now()
+      const d = stopTime - startTime
+      setDuration(d)
+
+      const entry = {
+        startTime,
+        stopTime,
+        score: points,
+        moves,
+        seed: seed ?? 0,
+      }
+      saveGameToHistory(entry)
+    }
+  }, [board, animating, startTime, duration, isGameOver, points, moves, seed])
+
+  useEffect(() => {
+    let intervalId: number | undefined
+    if (startTime && duration === undefined) {
+      setElapsed(Date.now() - startTime)
+      intervalId = window.setInterval(() => {
+        setElapsed(Date.now() - startTime)
+      }, 1000)
+    } else if (duration !== undefined) {
+      setElapsed(duration)
+    } else {
+      setElapsed(0)
+    }
+    return () => window.clearInterval(intervalId)
+  }, [startTime, duration])
+
+  function formatTime(ms: number) {
+    const seconds = Math.floor((ms / 1000) % 60)
+    const minutes = Math.floor((ms / (1000 * 60)) % 60)
+    const hours = Math.floor(ms / (1000 * 60 * 60))
+
+    const parts = []
+    if (hours > 0) parts.push(`${hours}h`)
+    if (minutes > 0 || hours > 0) parts.push(`${minutes}m`)
+    parts.push(`${seconds}s`)
+    return parts.join(" ")
+  }
   const animationDuration = AnimationSpeeds[animationSpeed]
 
   const transition: Transition = { type: "spring", duration: animationDuration }
@@ -122,6 +182,12 @@ export default function Game() {
   }
 
   async function swapTiles(a: Position, b: Position) {
+    if (moves === 0 && !startTime) {
+      setStartTime(Date.now())
+      if (!seed) {
+        setSeed(Math.floor(Math.random() * 1000000))
+      }
+    }
     const boards = swapTile(a, b, board)
     setMoves((moves) => moves + 1)
     setAnimating(true)
@@ -168,7 +234,7 @@ export default function Game() {
     if (animating) {
       return
     }
-    saveGameState(board, points, moves)
+    saveGameState(board, points, moves, startTime, seed, duration)
     async function checkHighscore() {
       if (!animating && !debug) {
         const highscore = await getHighscore()
@@ -192,7 +258,7 @@ export default function Game() {
       }
     }
     checkHighscore()
-  }, [board, points, animating])
+  }, [board, points, animating, startTime, seed, duration])
   useEffect(() => {
     // Sync score with leaderboards, in case they got a highscore while offline.
     // also sometimes submitting scores just don't work
@@ -238,10 +304,15 @@ export default function Game() {
 
   function resetBoard(): void {
     const newBoard = generateBoard(8)
-    saveGameState(newBoard, 0, 0)
+    const newSeed = Math.floor(Math.random() * 1000000)
+    saveGameState(newBoard, 0, 0, undefined, newSeed)
     setGameOverClosed(false)
     setPoints(0)
     setMoves(0)
+    setStartTime(undefined)
+    setSeed(newSeed)
+    setDuration(undefined)
+    setElapsed(0)
     setBoard(newBoard)
   }
   const [autoplay, setAutoplay] = useState(false)
@@ -345,6 +416,14 @@ export default function Game() {
                       {moves.toLocaleString()}
                     </span>
                   </div>
+                  {duration !== undefined && (
+                    <div className="mb-4 flex justify-between px-8 text-lg">
+                      <span>Time</span>
+                      <span className="font-medium">
+                        {formatTime(duration)}
+                      </span>
+                    </div>
+                  )}
                   <ShareButton board={board} points={points} moves={moves} />
                   <Button
                     onClick={() => {
@@ -421,13 +500,20 @@ export default function Game() {
             </div>
           </div>
 
-          <div className="flex flex-row justify-between">
+          <div className="flex flex-row items-center justify-between">
             <button
               onClick={getHint}
               className="w-fit rounded-xl bg-gradient-to-bl from-indigo-500 to-indigo-600 px-6 py-2 text-lg font-medium text-white"
             >
               Get hint
             </button>
+            {startTime && (
+              <Link href="/history">
+                <button className="text-xl font-medium">
+                  {formatTime(elapsed)}
+                </button>
+              </Link>
+            )}
             <button
               onClick={() =>
                 (isGameOver(board) || confirm("Are you sure?")) && resetBoard()
@@ -498,6 +584,9 @@ export default function Game() {
             </button>
           </>
         )}
+        <Link href="/history" aria-label="Game History">
+          <History className="h-6 w-6" />
+        </Link>
         <Settings
           setAnimationSpeed={setAnimationSpeed}
           animationSpeed={animationSpeed}
