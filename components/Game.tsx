@@ -35,6 +35,8 @@ import Button from "./Button"
 import ShareButton from "./ShareButton"
 import Link from "next/link"
 import { History } from "lucide-react"
+import { useAudioPlayer } from "@/hooks/useAudioPlayer"
+import { Volume2, VolumeX } from "lucide-react"
 
 export default function Game() {
   const {
@@ -52,6 +54,13 @@ export default function Game() {
   const [duration, setDuration] = useState<number | undefined>(undefined)
   const [elapsed, setElapsed] = useState<number>(0)
   const [loading, setLoading] = useState(true)
+
+  const { play } = useAudioPlayer([
+    "/sounds/blop1.mp3",
+    "/sounds/blop2.mp3",
+    "/sounds/blop3.mp3",
+  ])
+  const [muted, setMuted] = useState(true)
 
   useEffect(() => {
     async function initSavedState() {
@@ -193,8 +202,13 @@ export default function Game() {
     setAnimating(true)
     const newBoardsHistory = [...boardsHistory, ...boards]
     setBoardsHistory(newBoardsHistory)
+    let soundsPlayed = 0
     for (const [index, newBoard] of boards.entries()) {
       setBoard(newBoard.board)
+      if (newBoard.points > 0 && !muted) {
+        play(Math.min(Math.pow(2, 0.4 * soundsPlayed), 2.5))
+        soundsPlayed++
+      }
       setPoints((currentPoints) => currentPoints + newBoard.points)
       if (index < boards.length - 1) {
         await new Promise((r) => setTimeout(r, animationDuration * 1000 + 100))
@@ -364,21 +378,21 @@ export default function Game() {
   }
 
   return (
-    <div
-      className={`flex pb-8 ${gamePosition == "top" ? "flex-col" : "flex-col-reverse "} items-center`}
-      ref={myDiv}
-    >
-      <Tutorial />
-      <motion.div
-        layout
-        className={`flex flex-1 transition ${gamePosition == "top" ? "flex-col justify-start" : "flex-col-reverse gap-8"}`}
+      <div
+          className={`flex pb-8 ${gamePosition == "top" ? "flex-col" : "flex-col-reverse "} items-center`}
+          ref={myDiv}
       >
-        <main
-          className="relative grid w-screen grid-cols-8 grid-rows-8 items-center gap-0.5 p-1 sm:w-full sm:gap-2 sm:p-4"
-          ref={grid}
-        >
-          <AnimatePresence>
-            {isGameOver(board) && !animating && !gameOverClosed && (
+          <Tutorial />
+          <motion.div
+              layout
+              className={`flex flex-1 transition ${gamePosition == "top" ? "flex-col justify-start" : "flex-col-reverse gap-8"}`}
+          >
+              <main
+                  className="relative grid w-screen grid-cols-8 grid-rows-8 items-center gap-0.5 p-1 sm:w-full sm:gap-2 sm:p-4"
+                  ref={grid}
+              >
+                  <AnimatePresence>
+{isGameOver(board) && !animating && !gameOverClosed && (
               <motion.div
                 className="absolute left-0 top-0 z-20 flex h-full w-full items-center justify-center"
                 initial={{ opacity: 0, scale: 0.5 }}
@@ -587,6 +601,16 @@ export default function Game() {
         <Link href="/history" aria-label="Game History">
           <History className="h-6 w-6" />
         </Link>
+
+        {!muted ? (
+          <button onClick={() => setMuted(!muted)}>
+            <Volume2 />
+          </button>
+        ) : (
+          <button onClick={() => setMuted(!muted)}>
+            <VolumeX />
+          </button>
+        )}
         <Settings
           setAnimationSpeed={setAnimationSpeed}
           animationSpeed={animationSpeed}
