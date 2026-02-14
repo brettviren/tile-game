@@ -38,10 +38,11 @@ import { History } from "lucide-react"
 import { useAudioPlayer } from "@/hooks/useAudioPlayer"
 import { Volume2, VolumeX } from "lucide-react"
 
+const basePath = process.env.NEXT_PUBLIC_BASE_PATH || ""
 const AUDIO_FILES = [
-  "/sounds/blop1.mp3",
-  "/sounds/blop2.mp3",
-  "/sounds/blop3.mp3",
+  `${basePath}/sounds/blop1.mp3`,
+  `${basePath}/sounds/blop2.mp3`,
+  `${basePath}/sounds/blop3.mp3`,
 ]
 
 export default function Game() {

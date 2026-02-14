@@ -35,7 +35,10 @@ export default function Tutorial() {
       exit="exit"
     >
       <div className="h-max w-full rounded border border-white p-2">
-        <img src="/tutorial1.jpg" className="h-full w-full" />
+        <img
+          src={`${process.env.NEXT_PUBLIC_BASE_PATH || ""}/tutorial1.jpg`}
+          className="h-full w-full"
+        />
       </div>
       <div className="mt-4 flex flex-col gap-4">
         <span>
@@ -57,7 +60,10 @@ export default function Tutorial() {
       exit="exit"
     >
       <div className="h-max w-full rounded border border-white p-2">
-        <img src="/tutorial2.jpg" className="h-full w-full" />
+        <img
+          src={`${process.env.NEXT_PUBLIC_BASE_PATH || ""}/tutorial2.jpg`}
+          className="h-full w-full"
+        />
       </div>
       <div className="mt-4 flex flex-col gap-4">
         <span>

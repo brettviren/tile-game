@@ -16,11 +16,12 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH || ""
   return (
     <html lang="en" className="h-full w-full overscroll-none">
       <head>
         <title>ExponenTile</title>
-        <link rel="manifest" href="manifest.json" />
+        <link rel="manifest" href={`${basePath}/manifest.json`} />
         <meta
           name="theme-color"
           content="#020617"

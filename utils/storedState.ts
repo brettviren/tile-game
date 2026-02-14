@@ -33,6 +33,7 @@ export async function getFromPersistedState({
 }: {
   key: string
 }): Promise<string | undefined> {
+  if (typeof window === "undefined") return undefined
   const cookieValue = getCookie(key)
   if (cookieValue) {
     // Migrating away from cookies. If there's a value, we'll move it to preferences (localStorage on web) and remove it from cookies.

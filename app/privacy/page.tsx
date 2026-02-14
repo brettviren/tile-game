@@ -4,7 +4,11 @@ import { useAudioPlayer } from "@/hooks/useAudioPlayer"
 import { useEffect } from "react"
 
 export default function Home() {
-  const { play } = useAudioPlayer(["/sounds/blop1.mp3", "/sounds/blop2.mp3"])
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH || ""
+  const { play } = useAudioPlayer([
+    `${basePath}/sounds/blop1.mp3`,
+    `${basePath}/sounds/blop2.mp3`,
+  ])
   return (
     <main className="flex flex-col items-center px-2">
       <Button onClick={() => play(0.5)}>Play</Button>

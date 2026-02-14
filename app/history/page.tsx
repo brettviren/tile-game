@@ -11,8 +11,10 @@ export default function HistoryPage() {
   const [history, setHistory] = useState<GameHistoryEntry[]>([])
   const [sortKey, setSortKey] = useState<SortKey>("stopTime")
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc")
+  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
+    setMounted(true)
     async function fetchHistory() {
       const h = await getGameHistory()
       setHistory(h)
@@ -68,6 +70,10 @@ export default function HistoryPage() {
       ) : null}
     </button>
   )
+
+  if (!mounted) {
+    return null
+  }
 
   return (
     <div className="flex min-h-screen flex-col items-center p-4">
