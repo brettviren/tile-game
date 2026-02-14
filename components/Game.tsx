@@ -60,6 +60,11 @@ export default function Game() {
   const [duration, setDuration] = useState<number | undefined>(undefined)
   const [elapsed, setElapsed] = useState<number>(0)
   const [loading, setLoading] = useState(true)
+  const [previousState, setPreviousState] = useState<{
+    board: Board
+    points: number
+    moves: number
+  } | undefined>(undefined)
 
   const { play } = useAudioPlayer(AUDIO_FILES)
   const [muted, setMuted] = useState(true)
@@ -199,6 +204,7 @@ export default function Game() {
         setSeed(Math.floor(Math.random() * 1000000))
       }
     }
+    setPreviousState({ board, points, moves })
     const boards = swapTile(a, b, board)
     setMoves((moves) => moves + 1)
     setAnimating(true)
@@ -225,6 +231,17 @@ export default function Game() {
     }
 
     setAnimating(false)
+  }
+
+  function undo() {
+    if (!previousState || animating) {
+      return
+    }
+    const currentState = { board, points, moves }
+    setBoard(previousState.board)
+    setPoints(previousState.points)
+    setMoves(previousState.moves)
+    setPreviousState(currentState)
   }
 
   async function clickTile(position: Position) {
@@ -330,6 +347,7 @@ export default function Game() {
     setDuration(undefined)
     setElapsed(0)
     setBoard(newBoard)
+    setPreviousState(undefined)
   }
   const [autoplay, setAutoplay] = useState(false)
 
@@ -522,6 +540,13 @@ export default function Game() {
               className="w-fit rounded-xl bg-gradient-to-bl from-indigo-500 to-indigo-600 px-6 py-2 text-lg font-medium text-white"
             >
               Get hint
+            </button>
+            <button
+              onClick={undo}
+              disabled={!previousState || animating}
+              className="w-fit rounded-xl bg-gradient-to-bl from-amber-500 to-amber-600 px-6 py-2 text-lg font-medium text-white disabled:opacity-50"
+            >
+              Undo
             </button>
             {startTime && (
               <Link href="/history">
