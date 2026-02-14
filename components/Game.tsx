@@ -38,6 +38,12 @@ import { History } from "lucide-react"
 import { useAudioPlayer } from "@/hooks/useAudioPlayer"
 import { Volume2, VolumeX } from "lucide-react"
 
+const AUDIO_FILES = [
+  "/sounds/blop1.mp3",
+  "/sounds/blop2.mp3",
+  "/sounds/blop3.mp3",
+]
+
 export default function Game() {
   const {
     board: initialBoard,
@@ -55,11 +61,7 @@ export default function Game() {
   const [elapsed, setElapsed] = useState<number>(0)
   const [loading, setLoading] = useState(true)
 
-  const { play } = useAudioPlayer([
-    "/sounds/blop1.mp3",
-    "/sounds/blop2.mp3",
-    "/sounds/blop3.mp3",
-  ])
+  const { play } = useAudioPlayer(AUDIO_FILES)
   const [muted, setMuted] = useState(true)
 
   useEffect(() => {
