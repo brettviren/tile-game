@@ -21,6 +21,7 @@
     "@radix-ui/react-toast": "^1.1.5",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
+    "esbuild": "^0.27.3",
     "framer-motion": "^11.2.4",
     "install": "^0.13.0",
     "lucide-react": "^0.367.0",

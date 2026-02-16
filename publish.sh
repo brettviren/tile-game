@@ -24,7 +24,7 @@ git worktree add -f ./pages-deploy pages
 
 # 5. Replace contents of the branch with the new build output
 rm -rf ./pages-deploy/*
-cp -rp out/* ./pages-deploy/
+cp -rp out/. ./pages-deploy/
 
 # 6. Commit and push changes
 cd ./pages-deploy

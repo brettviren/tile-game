@@ -34,9 +34,8 @@ import { boardContains2048Tile } from "@/utils/achievements"
 import Button from "./Button"
 import ShareButton from "./ShareButton"
 import Link from "next/link"
-import { History } from "lucide-react"
+import { History, Volume2, VolumeX, Maximize, Minimize } from "lucide-react"
 import { useAudioPlayer } from "@/hooks/useAudioPlayer"
-import { Volume2, VolumeX } from "lucide-react"
 
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH || ""
 const AUDIO_FILES = [
@@ -69,6 +68,30 @@ export default function Game() {
 
   const { play } = useAudioPlayer(AUDIO_FILES)
   const [muted, setMuted] = useState(true)
+  const [isFullscreen, setIsFullscreen] = useState(false)
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement)
+    }
+    document.addEventListener("fullscreenchange", handleFullscreenChange)
+    return () =>
+      document.removeEventListener("fullscreenchange", handleFullscreenChange)
+  }, [])
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch((err) => {
+        console.error(
+          `Error attempting to enable full-screen mode: ${err.message}`,
+        )
+      })
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen()
+      }
+    }
+  }
 
   useEffect(() => {
     async function initSavedState() {
@@ -409,7 +432,7 @@ export default function Game() {
               className={`flex flex-1 transition ${gamePosition == "top" ? "flex-col justify-start" : "flex-col-reverse gap-8"}`}
           >
               <main
-                  className="relative grid w-screen grid-cols-8 grid-rows-8 items-center gap-0.5 p-1 sm:w-full sm:gap-2 sm:p-4"
+                  className="relative grid w-screen grid-cols-8 grid-rows-8 items-center gap-0.5 p-1 sm:w-full sm:gap-2 sm:p-4 touch-none"
                   ref={grid}
               >
                   <AnimatePresence>
@@ -637,6 +660,11 @@ export default function Game() {
         ) : (
           <button onClick={() => setMuted(!muted)}>
             <VolumeX />
+          </button>
+        )}
+        {typeof document !== "undefined" && document.fullscreenEnabled && (
+          <button onClick={toggleFullscreen} aria-label="Toggle Fullscreen">
+            {isFullscreen ? <Minimize /> : <Maximize />}
           </button>
         )}
         <Settings
