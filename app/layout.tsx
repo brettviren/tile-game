@@ -39,6 +39,17 @@ export default function RootLayout({
           src="https://static.cloudflareinsights.com/beacon.min.js"
           data-cf-beacon='{"token": "ef75d67ce4a04caca98866a9a7198357"}'
         ></script>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if ('serviceWorker' in navigator) {
+                window.addEventListener('load', function() {
+                  navigator.serviceWorker.register('${basePath}/sw.js');
+                });
+              }
+            `,
+          }}
+        />
       </body>
     </html>
   )
