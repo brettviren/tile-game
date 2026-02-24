@@ -32,13 +32,16 @@ export default function Tile({
   }, [tile.value])
   return (
     <motion.div
-      whileHover={{ scale: 1.2 }}
       whileTap={{ scale: 0.98 }}
       transition={{ type: "spring", stiffness: 700, damping: 20 }}
-      style={{ background: color, color: getContrastTextColor(color) }}
+      style={{
+        background: color,
+        color: getContrastTextColor(color),
+        willChange: "transform",
+      }}
       className={`flex h-full w-full select-none items-center justify-center rounded font-bold text-black transition-colors duration-700 ${
         selected ? "ring ring-yellow-400" : ""
-      } ${tile.value > 9 ? "text-sm md:text-xl" : "text-xl md:text-2xl"} ${tile.value > 10 && "text-base shadow-[0px_0px_20px_10px_#ed8936] md:text-xl"}`}
+      } ${tile.value > 9 ? "text-sm md:text-xl" : "text-xl md:text-2xl"} ${tile.value > 10 && "text-base ring-2 ring-orange-400 md:text-xl"}`}
       ref={scope}
     >
       {Math.pow(2, tile.value)}

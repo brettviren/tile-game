@@ -44,6 +44,33 @@ const AUDIO_FILES = [
   `${basePath}/sounds/blop3.mp3`,
 ]
 
+function Timer({
+  startTime,
+  duration,
+  formatTime,
+}: {
+  startTime: number
+  duration?: number
+  formatTime: (ms: number) => string
+}) {
+  const [elapsed, setElapsed] = useState<number>(0)
+
+  useEffect(() => {
+    let intervalId: number | undefined
+    if (duration === undefined) {
+      setElapsed(Date.now() - startTime)
+      intervalId = window.setInterval(() => {
+        setElapsed(Date.now() - startTime)
+      }, 1000)
+    } else {
+      setElapsed(duration)
+    }
+    return () => window.clearInterval(intervalId)
+  }, [startTime, duration])
+
+  return <button className="text-xl font-medium">{formatTime(elapsed)}</button>
+}
+
 export default function Game() {
   const {
     board: initialBoard,
@@ -58,7 +85,6 @@ export default function Game() {
   const [startTime, setStartTime] = useState<number | undefined>(undefined)
   const [seed, setSeed] = useState<number | undefined>(undefined)
   const [duration, setDuration] = useState<number | undefined>(undefined)
-  const [elapsed, setElapsed] = useState<number>(0)
   const [loading, setLoading] = useState(true)
   const [previousState, setPreviousState] = useState<{
     board: Board
@@ -171,20 +197,6 @@ export default function Game() {
     }
   }, [board, animating, startTime, duration, isGameOver, points, moves, seed])
 
-  useEffect(() => {
-    let intervalId: number | undefined
-    if (startTime && duration === undefined) {
-      setElapsed(Date.now() - startTime)
-      intervalId = window.setInterval(() => {
-        setElapsed(Date.now() - startTime)
-      }, 1000)
-    } else if (duration !== undefined) {
-      setElapsed(duration)
-    } else {
-      setElapsed(0)
-    }
-    return () => window.clearInterval(intervalId)
-  }, [startTime, duration])
 
   function formatTime(ms: number) {
     const seconds = Math.floor((ms / 1000) % 60)
@@ -369,7 +381,6 @@ export default function Game() {
     setStartTime(undefined)
     setSeed(newSeed)
     setDuration(undefined)
-    setElapsed(0)
     setBoard(newBoard)
     setPreviousState(undefined)
   }
@@ -574,9 +585,11 @@ export default function Game() {
             </button>
             {startTime && (
               <Link href="/history">
-                <button className="text-xl font-medium">
-                  {formatTime(elapsed)}
-                </button>
+                <Timer
+                  startTime={startTime}
+                  duration={duration}
+                  formatTime={formatTime}
+                />
               </Link>
             )}
             <button
