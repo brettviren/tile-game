@@ -1,0 +1,45 @@
+#+title Exponentile
+
+This is an extension to the original MikeBellika/tile-game
+
+- https://github.com/MikeBellika/tile-game
+- https://bellika.dk/exponentile
+
+You can play this fork at
+
+- https://brettviren.github.io/tile-game/
+
+This fork has the following completed and planned changes:
+
+- [X] Builds/runs with deno.
+- [X] Saves elapsed time.
+- [X] Adds a game history page.
+- [X] Merges upstream's feature/sound branch.
+- [X] Adds a single undo.
+- [X] Allows serving from a URL sub-path.
+- [X] Publishes to GitHub pages.
+- [X] Add full screen and touch-none to help on mobile.
+- [X] Is a PWA ("save to home screen").
+- [X] Attempts to conserve battery for mobile use.
+- [X] Store last state in history.
+- [X] Revisit last state as full board.
+- [ ] Store all moves.
+- [ ] Replay games.
+
+To build and run locally:
+
+#+begin_example
+$ deno task build
+$ deno task serve
+#+end_example
+
+To publish to github pages.
+
+#+begin_example
+./publish.sh
+#+end_example
+
+Caveat: this fork is largely vibe coded.  I do look at the produced code for
+sanity but there is no guarantee that this fork does not ruin all that you hold
+dear.  Please do not pester the original author with any problems you may
+encounter (nor me for that matter).

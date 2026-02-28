@@ -1,13 +1,54 @@
 "use client"
 import { useEffect, useState } from "react"
 import { getGameHistory, GameHistoryEntry } from "@/utils/storedState"
-import { ChevronUp, ChevronDown, ArrowLeft } from "lucide-react"
+import { ChevronUp, ChevronDown, ArrowLeft, Play } from "lucide-react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 
 type SortKey = keyof GameHistoryEntry
 type SortOrder = "asc" | "desc"
 
+// Mini board component to display a snapshot of the game
+function MiniBoard({ board, size }: { board: number[]; size: number }) {
+  const tileColors: Record<number, string> = {
+    1: "#0a9396",
+    2: "#e9d8a6",
+    3: "#ee9b00",
+    4: "#ca6702",
+    5: "#005f73",
+    6: "#ae2012",
+    7: "#86350f",
+    8: "#94d2bd",
+    9: "#9b2226",
+  }
+
+  return (
+    <div
+      className="grid gap-0.5 p-1"
+      style={{
+        gridTemplateColumns: `repeat(${size}, minmax(0, 1fr))`,
+        width: "48px",
+        height: "48px",
+      }}
+    >
+      {board.slice(0, size * size).map((value, i) => (
+        <div
+          key={i}
+          className="flex items-center justify-center rounded text-xs font-bold text-white"
+          style={{
+            backgroundColor: tileColors[value] || `hsl(${(value - 9) * 36} 100% 75%)`,
+            aspectRatio: "1",
+          }}
+        >
+          {value > 0 ? value : ""}
+        </div>
+      ))}
+    </div>
+  )
+}
+
 export default function HistoryPage() {
+  const router = useRouter()
   const [history, setHistory] = useState<GameHistoryEntry[]>([])
   const [sortKey, setSortKey] = useState<SortKey>("stopTime")
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc")
@@ -71,6 +112,18 @@ export default function HistoryPage() {
     </button>
   )
 
+  const loadGame = (entry: GameHistoryEntry) => {
+    // Store the board state in sessionStorage
+    sessionStorage.setItem("loadedGameBoard", JSON.stringify(entry.board))
+    sessionStorage.setItem("loadedGamePoints", entry.score.toString())
+    sessionStorage.setItem("loadedGameMoves", entry.moves.toString())
+    sessionStorage.setItem("loadedGameSeed", entry.seed.toString())
+    sessionStorage.setItem("loadedGameStartTime", entry.startTime.toString())
+
+    // Navigate to the game page
+    router.push("/exponentile")
+  }
+
   if (!mounted) {
     return null
   }
@@ -108,12 +161,13 @@ export default function HistoryPage() {
               <th className="p-4 whitespace-nowrap">
                 <SortButton k="seed" label="Seed" />
               </th>
+              <th className="p-4 whitespace-nowrap text-center">Board</th>
             </tr>
           </thead>
           <tbody>
             {sortedHistory.length === 0 ? (
               <tr>
-                <td colSpan={6} className="p-8 text-center text-gray-500">
+                <td colSpan={7} className="p-8 text-center text-gray-500">
                   No games played yet.
                 </td>
               </tr>
@@ -137,6 +191,19 @@ export default function HistoryPage() {
                   </td>
                   <td className="p-4">{entry.moves.toLocaleString()}</td>
                   <td className="p-4 font-mono text-xs">{entry.seed}</td>
+                  <td className="p-4">
+                    <button
+                      onClick={() => loadGame(entry)}
+                      className="flex items-center justify-center gap-1 rounded bg-indigo-600 hover:bg-indigo-700 p-2 transition-colors"
+                      title="Load this game"
+                    >
+                      <MiniBoard
+                        board={entry.board}
+                        size={8}
+                      />
+                      <Play size={12} />
+                    </button>
+                  </td>
                 </tr>
               ))
             )}

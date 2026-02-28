@@ -6,6 +6,7 @@ import {
   copyBoard,
   generateBoard,
   useBoard,
+  getRandomTile,
 } from "@/hooks/useBoard"
 import {
   motion,
@@ -121,6 +122,46 @@ export default function Game() {
 
   useEffect(() => {
     async function initSavedState() {
+      // First check if there's a game loaded from history
+      const loadedBoard = sessionStorage.getItem("loadedGameBoard")
+      const loadedPoints = sessionStorage.getItem("loadedGamePoints")
+      const loadedMoves = sessionStorage.getItem("loadedGameMoves")
+      const loadedSeed = sessionStorage.getItem("loadedGameSeed")
+      const loadedStartTime = sessionStorage.getItem("loadedGameStartTime")
+
+      if (loadedBoard && loadedPoints && loadedMoves && loadedSeed && loadedStartTime) {
+        // Load the game from history
+        const boardValues = JSON.parse(loadedBoard)
+        const size = 8
+        const board: Board = Array.from({ length: size }, (_, y) =>
+          Array.from({ length: size }, (_, x) => {
+            const index = y * size + x
+            return {
+              ...getRandomTile(),
+              value: boardValues[index],
+            }
+          }),
+        )
+
+        setBoard(board)
+        setPoints(parseInt(loadedPoints))
+        setMoves(parseInt(loadedMoves))
+        setSeed(parseInt(loadedSeed))
+        setStartTime(parseInt(loadedStartTime))
+        setDuration(0) // Force game over state
+      setIsLoadedFromHistory(true) // Force game over screen
+
+        // Clear the loaded game flags
+        sessionStorage.removeItem("loadedGameBoard")
+        sessionStorage.removeItem("loadedGamePoints")
+        sessionStorage.removeItem("loadedGameMoves")
+        sessionStorage.removeItem("loadedGameSeed")
+        sessionStorage.removeItem("loadedGameStartTime")
+
+        setLoading(false)
+        return
+      }
+
       const gameState = await getGameState()
       if (!gameState || gameState.points == 0) {
         setSeed(Math.floor(Math.random() * 1000000))
@@ -165,6 +206,8 @@ export default function Game() {
   }, [])
 
   const [highscore, initialiseHighscore] = useState<number>(0)
+  const [isLoadedFromHistory, setIsLoadedFromHistory] = useState(false)
+
   useEffect(() => {
     async function initHighScore() {
       initialiseHighscore(await getHighscore())
@@ -186,12 +229,16 @@ export default function Game() {
       const d = stopTime - startTime
       setDuration(d)
 
+      // Serialize board to a simple array of values
+      const boardValues = board.flat().map((tile) => tile.value)
+
       const entry = {
         startTime,
         stopTime,
         score: points,
         moves,
         seed: seed ?? 0,
+        board: boardValues,
       }
       saveGameToHistory(entry)
     }
@@ -376,6 +423,7 @@ export default function Game() {
     const newSeed = Math.floor(Math.random() * 1000000)
     saveGameState(newBoard, 0, 0, undefined, newSeed)
     setGameOverClosed(false)
+    setIsLoadedFromHistory(false)
     setPoints(0)
     setMoves(0)
     setStartTime(undefined)
@@ -447,7 +495,7 @@ export default function Game() {
                   ref={grid}
               >
                   <AnimatePresence>
-{isGameOver(board) && !animating && !gameOverClosed && (
+{(isGameOver(board) || isLoadedFromHistory) && !animating && !gameOverClosed && (
               <motion.div
                 className="absolute left-0 top-0 z-20 flex h-full w-full items-center justify-center"
                 initial={{ opacity: 0, scale: 0.5 }}

@@ -7,7 +7,7 @@ export default function Home() {
           The tile game is available at a different path.
         </p>
         <a
-          href="/tile-game/exponentile"
+          href="exponentile"
           className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
         >
           Play ExponenTile

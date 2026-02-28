@@ -13,6 +13,7 @@ export type GameHistoryEntry = {
   score: number
   moves: number
   seed: number
+  board: number[] // Serialized board values
 }
 
 export async function saveToPersistedState({
