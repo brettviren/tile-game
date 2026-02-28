@@ -133,7 +133,7 @@ export default function HistoryPage() {
       <header className="mb-8 flex w-full max-w-4xl items-center justify-between">
         <div className="flex items-center gap-4">
           <Link
-            href="/"
+            href=".."
             className="rounded-full p-2 transition-colors hover:bg-gray-100 dark:hover:bg-gray-800"
           >
             <ArrowLeft size={24} />
