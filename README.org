@@ -1,4 +1,6 @@
-#+title Exponentile
+#+title: Exponentile
+
+[[file:screen.png]]
 
 This is an extension to the original MikeBellika/tile-game
 
