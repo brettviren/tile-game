@@ -1,5 +1,6 @@
 #!/bin/bash
 set -e
+set -x
 
 # 1. Build the app for the /tile-game subpath
 echo "Building for /tile-game..."

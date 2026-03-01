@@ -11,6 +11,12 @@ You can play this fork at
 
 - https://brettviren.github.io/tile-game/
 
+Caveat: I may update this site from time to time.  There is no attempt to do
+schema evolution on the data stored in your browser's Local Storage for this
+site.  Old data and a new site can be inconsistent and the only recourse is to
+go to Inspect->Storage->Local Storage, select this site and delete.  When I stop
+messing about, I'll remove this caveat.
+
 This fork has the following completed and planned changes:
 
 - [X] Builds/runs with deno.

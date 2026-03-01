@@ -1,6 +1,6 @@
 "use client"
 import { useEffect, useState } from "react"
-import { getGameHistory, GameHistoryEntry } from "@/utils/storedState"
+import type { GameHistoryEntry } from "@/utils/storedState"
 import { ChevronUp, ChevronDown, ArrowLeft, Play } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -57,6 +57,7 @@ export default function HistoryPage() {
   useEffect(() => {
     setMounted(true)
     async function fetchHistory() {
+      const { getGameHistory } = await import("@/utils/storedState")
       const h = await getGameHistory()
       setHistory(h)
     }

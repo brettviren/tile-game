@@ -6,7 +6,7 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-  transpilePackages: ["lucide-react", "@capacitor/preferences", "@capacitor/core"],
+  transpilePackages: ["@capacitor/preferences", "@capacitor/core"],
 };
 
 export default nextConfig;
