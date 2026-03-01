@@ -40,7 +40,7 @@ function MiniBoard({ board, size }: { board: number[]; size: number }) {
             aspectRatio: "1",
           }}
         >
-          {value > 0 ? value : ""}
+            {/*           {value > 0 ? value : ""} */}
         </div>
       ))}
     </div>
