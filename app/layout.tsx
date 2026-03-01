@@ -2,6 +2,7 @@ import { Inter } from "next/font/google"
 import "./globals.css"
 import { Toaster } from "@/components/ui/toaster"
 import { Viewport } from "next"
+import ServiceWorkerRegister from "@/components/ServiceWorkerRegister"
 
 const inter = Inter({ subsets: ["latin"] })
 export const viewport: Viewport = {
@@ -32,24 +33,9 @@ export default function RootLayout({
       <body
         className={`${inter.className} h-full w-full overscroll-none bg-slate-50 dark:bg-slate-950`}
       >
+        <ServiceWorkerRegister />
         {children}
         <Toaster />
-        <script
-          defer
-          src="https://static.cloudflareinsights.com/beacon.min.js"
-          data-cf-beacon='{"token": "ef75d67ce4a04caca98866a9a7198357"}'
-        ></script>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              if ('serviceWorker' in navigator) {
-                window.addEventListener('load', function() {
-                  navigator.serviceWorker.register('${basePath}/sw.js');
-                });
-              }
-            `,
-          }}
-        />
       </body>
     </html>
   )

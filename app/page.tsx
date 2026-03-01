@@ -21,7 +21,12 @@ export default function Home() {
               >
                   History
               </a>
-              
+
+              <p>
+                  Built on
+Sun Mar  1 04:05:37 PM EST 2026
+              </p>
+
           </div>
       </div>
   )
