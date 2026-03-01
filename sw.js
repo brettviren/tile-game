@@ -1,4 +1,4 @@
-const CACHE_NAME = 'exponentile-cache-v2';
+const CACHE_NAME = 'exponentile-cache-v1';
 const urlsToCache = [
   './',
   './manifest.json',
