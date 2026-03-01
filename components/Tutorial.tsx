@@ -38,6 +38,7 @@ export default function Tutorial() {
         <img
           src={`${process.env.NEXT_PUBLIC_BASE_PATH || ""}/tutorial1.jpg`}
           className="h-full w-full"
+          alt="Step 1: Swap tiles to match three or more"
         />
       </div>
       <div className="mt-4 flex flex-col gap-4">
@@ -63,6 +64,7 @@ export default function Tutorial() {
         <img
           src={`${process.env.NEXT_PUBLIC_BASE_PATH || ""}/tutorial2.jpg`}
           className="h-full w-full"
+          alt="Step 2: Larger matches result in higher value tiles"
         />
       </div>
       <div className="mt-4 flex flex-col gap-4">

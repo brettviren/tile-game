@@ -36,7 +36,7 @@ export default function Settings({
       setDebug(true)
       toast({ description: "Debug mode enabled" })
     }
-  }, [settingsPressed])
+  }, [settingsPressed, setDebug, toast])
   return (
     <>
       <AnimatePresence>

@@ -374,7 +374,7 @@ export default function Game() {
       }
     }
     checkHighscore()
-  }, [board, points, animating, startTime, seed, duration])
+  }, [board, points, animating, startTime, seed, duration, animationSpeed, debug, highscore, isGameOver, moves, player])
   useEffect(() => {
     // Sync score with leaderboards, in case they got a highscore while offline.
     // also sometimes submitting scores just don't work
@@ -447,7 +447,7 @@ export default function Game() {
     if (autoplay && !animating) {
       autoPlay()
     }
-  }, [autoplay, board])
+  }, [autoplay, board, animating, getPositionsThatAlmostMatch, swapTiles])
 
   function getHint(): void {
     const hintPositions = getPositionsThatAlmostMatch(board)

@@ -29,7 +29,7 @@ export default function Tile({
       [scope.current, { scale: 1, border: "none" }],
     ]
     animate(sequence)
-  }, [tile.value])
+  }, [tile.value, animate, previousValue, scope])
   return (
     <motion.div
       whileTap={{ scale: 0.98 }}
