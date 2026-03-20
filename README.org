@@ -31,8 +31,16 @@ This fork has the following completed and planned changes:
 - [X] Attempts to conserve battery for mobile use.
 - [X] Store last state in history.
 - [X] Revisit last state as full board.
+- [ ] Convert from local storage to indexdb
+- [ ] History: Add link to replay a given seed.
+- [ ] History: sort by duration.
+- [ ] History: plot distributions of scores, duration and moves.
+- [ ] History: plot scores, duration and moves vs time.
 - [ ] Store all moves.
 - [ ] Replay games.
+- [ ] Make "instantaneous" speed, truly so and make current "instantaneous"  merely "super fast"
+- [X] Fix regression: new tiles flash to white after a board touch but they should do complete this when they appear.
+- [ ] Get android app with this fork building.
 
 To build and run locally:
 

@@ -21,14 +21,13 @@ export default function Tile({
 
   useEffect(() => {
     // We only want to animate when the tile changes value from a combo. Not when a new tile lands.
-    if (previousValue == undefined) {
-      return
+    if (previousValue !== undefined && tile.value !== previousValue) {
+      const sequence: AnimationSequence = [
+        [scope.current, { scale: 1.3, border: "10px solid white" }],
+        [scope.current, { scale: 1, border: "none" }],
+      ]
+      animate(sequence)
     }
-    const sequence: AnimationSequence = [
-      [scope.current, { scale: 1.3, border: "10px solid white" }],
-      [scope.current, { scale: 1, border: "none" }],
-    ]
-    animate(sequence)
   }, [tile.value, animate, previousValue, scope])
   return (
     <motion.div
