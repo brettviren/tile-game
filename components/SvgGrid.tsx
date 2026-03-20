@@ -63,7 +63,7 @@ const SvgGrid = ({ board }: { board: Board }) => {
             {`
 @font-face {
               font-family: 'InterSvg';
-font-weight: bold; 
+font-weight: 'bold'; 
 src: url(${interDataUrl}) format('woff2');
 }
             `}

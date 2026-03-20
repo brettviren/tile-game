@@ -1,8 +1,16 @@
 {
+  "unstable": ["unsafe-proto"],
   "nodeModulesDir": "auto",
   "tasks": {
     "dev": "deno run -A npm:next dev",
-    "build": "deno run -A npm:next build",
+    "build": "deno run -A npm:next build && deno run --allow-read --allow-write --allow-env scripts/build.ts",
+    "build:prod": "NODE_ENV=production deno run -A npm:next build && NODE_ENV=production deno run --allow-read --allow-write --allow-env scripts/build.ts",
     "serve": "deno run --allow-net --allow-read jsr:@std/http/file-server out/ --port 8080"
+  },
+  "fmt": {
+    "include": ["scripts/", "app/"]
+  },
+  "lint": {
+    "include": ["scripts/", "app/"]
   }
 }
