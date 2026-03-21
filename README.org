@@ -31,15 +31,18 @@ This fork has the following completed and planned changes:
 - [X] Attempts to conserve battery for mobile use.
 - [X] Store last state in history.
 - [X] Revisit last state as full board.
-- [ ] Convert from local storage to indexdb
-- [ ] History: Add link to replay a given seed.
+- [X] Fix regression: new tiles flash to white after a board touch but they should do complete this when they appear.
+- [X] Add timer pause
+- [X] Allow setting seed via URL parameter.
+  - eg append ~?seed=12345~ to the URL
+- [ ] History: Add link to replay a given seed on seed entry.
 - [ ] History: sort by duration.
+- [ ] Make "instantaneous" speed, truly so and make current "instantaneous"  merely "super fast"
+- [ ] Convert from local storage to indexdb
 - [ ] History: plot distributions of scores, duration and moves.
 - [ ] History: plot scores, duration and moves vs time.
 - [ ] Store all moves.
 - [ ] Replay games.
-- [ ] Make "instantaneous" speed, truly so and make current "instantaneous"  merely "super fast"
-- [X] Fix regression: new tiles flash to white after a board touch but they should do complete this when they appear.
 - [ ] Get android app with this fork building.
 
 To build and run locally:
@@ -47,6 +50,13 @@ To build and run locally:
 #+begin_example
 $ deno task build
 $ deno task serve
+#+end_example
+
+Note, the build sometimes hangs while =deno= and other tools show no CPU usage.  I don't know the reason but this seems to clear up what is going bad:
+
+#+begin_example
+$ rm -r .next
+$ deno task build
 #+end_example
 
 To publish to github pages.

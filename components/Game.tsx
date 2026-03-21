@@ -7,7 +7,10 @@ import {
   generateBoard,
   useBoard,
   getRandomTile,
+  RandomFunc, // Import RandomFunc type
+  getStateFromString, // Import getStateFromString
 } from "@/hooks/useBoard"
+import { createSeededRandom } from "@/utils/seededRandom" // Import createSeededRandom
 import {
   motion,
   AnimatePresence,
@@ -99,18 +102,11 @@ function Timer({
 }
 
 export default function Game() {
-  const {
-    board: initialBoard,
-    isAdjacent,
-    swapTile,
-    getPositionsThatAlmostMatch,
-    isGameOver,
-  } = useBoard(8)
-  const [board, setBoard] = useState<Board>(initialBoard)
+  const [board, setBoard] = useState<Board>([] as any) // Initialize with an empty array or loading state
   const [points, setPoints] = useState(0)
   const [moves, setMoves] = useState(0)
+  const [seed, setSeed] = useState<number | undefined>(undefined) // Declare seed first
   const [startTime, setStartTime] = useState<number | undefined>(undefined)
-  const [seed, setSeed] = useState<number | undefined>(undefined)
   const [duration, setDuration] = useState<number | undefined>(undefined)
 
   // New state variables for accurate timer
@@ -174,7 +170,19 @@ export default function Game() {
 
   useEffect(() => {
     async function initSavedState() {
-      // ... (existing code)
+      // Check URL for seed parameter first
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlSeed = urlParams.get("seed");
+      let initialSeed: number | undefined = undefined;
+
+      if (urlSeed) {
+        initialSeed = parseInt(urlSeed);
+        if (isNaN(initialSeed)) {
+          console.warn("Invalid seed provided in URL, generating a random one.");
+          initialSeed = Math.floor(Math.random() * 1000000);
+        }
+      }
+
       const loadedBoard = sessionStorage.getItem("loadedGameBoard")
       const loadedPoints = sessionStorage.getItem("loadedGamePoints")
       const loadedMoves = sessionStorage.getItem("loadedGameMoves")
@@ -185,64 +193,96 @@ export default function Game() {
       )
 
       if (loadedBoard && loadedPoints && loadedMoves && loadedSeed && loadedStartTime) {
-        // Load the game from history
-        const boardValues = JSON.parse(loadedBoard)
-        const size = 8
+        // Use URL seed if present, otherwise use loaded seed
+        const seedToUse = initialSeed ?? parseInt(loadedSeed);
+        setSeed(seedToUse); // Set the seed state
+
+        const seededRandomFunc = createSeededRandom(seedToUse);
+
+        // Load the game from history, using the seeded random function
+        const boardValues = JSON.parse(loadedBoard);
+        const size = 8;
         const board: Board = Array.from({ length: size }, (_, y) =>
           Array.from({ length: size }, (_, x) => {
-            const index = y * size + x
+            const index = y * size + x;
             return {
-              ...getRandomTile(),
+              ...getRandomTile(seededRandomFunc), // Use seeded getRandomTile
               value: boardValues[index],
-            }
+            };
           }),
-        )
+        );
 
-        setBoard(board)
-        setPoints(parseInt(loadedPoints))
-        setMoves(parseInt(loadedMoves))
-        setSeed(parseInt(loadedSeed))
-        setStartTime(parseInt(loadedStartTime))
-        setPausedAccumulatedTime(parseInt(loadedPausedAccumulatedTime ?? "0"))
-        setDuration(0) // Force game over state
-        setIsLoadedFromHistory(true) // Force game over screen
+        setBoard(board);
+        setPoints(parseInt(loadedPoints));
+        setMoves(parseInt(loadedMoves));
+        setStartTime(parseInt(loadedStartTime));
+        setPausedAccumulatedTime(parseInt(loadedPausedAccumulatedTime ?? "0"));
+        setDuration(0); // Force game over state
+        setIsLoadedFromHistory(true); // Force game over screen
 
         // Clear the loaded game flags
-        sessionStorage.removeItem("loadedGameBoard")
-        sessionStorage.removeItem("loadedGamePoints")
-        sessionStorage.removeItem("loadedGameMoves")
-        sessionStorage.removeItem("loadedGameSeed")
-        sessionStorage.removeItem("loadedGameStartTime")
-        sessionStorage.removeItem("loadedPausedAccumulatedTime")
+        sessionStorage.removeItem("loadedGameBoard");
+        sessionStorage.removeItem("loadedGamePoints");
+        sessionStorage.removeItem("loadedGameMoves");
+        sessionStorage.removeItem("loadedGameSeed");
+        sessionStorage.removeItem("loadedGameStartTime");
+        sessionStorage.removeItem("loadedPausedAccumulatedTime");
 
 
-        setLoading(false)
-        return
+        setLoading(false);
+        return;
       }
 
-      const gameState = await getGameState()
+      const gameState = await getGameState();
       if (!gameState || gameState.points == 0) {
-        setSeed(Math.floor(Math.random() * 1000000))
-        setLoading(false)
-        return
+        // If no saved state, use URL seed or generate a new random one
+        const newSeed = initialSeed ?? Math.floor(Math.random() * 1000000);
+        setSeed(newSeed); // Set the seed state
+        // No board to load, so useBoard will generate a new one with this seed.
+        setLoading(false);
+        return;
       }
-      setBoard(gameState.board)
-      setPoints(gameState.points)
-      setMoves(gameState.moves)
-      setStartTime(gameState.startTime)
-      setSeed(gameState.seed)
-      setDuration(gameState.duration)
-      // New: Load pausedAccumulatedTime and set lastUnpausedTime if not paused
-      setPausedAccumulatedTime(gameState.pausedAccumulatedTime || 0)
-      if (!gameState.isPaused) {
-        setLastUnpausedTime(Date.now()) // Assume it was running if not explicitly paused
+      
+      // If saved state, use URL seed if present, otherwise use saved seed
+      const seedToUse = initialSeed ?? gameState.seed ?? Math.floor(Math.random() * 1000000);
+      setSeed(seedToUse); // Set the seed state
+
+      // When loading gameState, use the getStateFromString function which now takes randomFunc
+      const seededRandomFunc = createSeededRandom(seedToUse);
+      const loadedGameState = getStateFromString(encodeURIComponent(JSON.stringify(gameState)), seededRandomFunc);
+      
+      setBoard(loadedGameState.board);
+      setPoints(loadedGameState.points);
+      setMoves(loadedGameState.moves);
+      setStartTime(loadedGameState.startTime);
+      setDuration(loadedGameState.duration);
+      setPausedAccumulatedTime(loadedGameState.pausedAccumulatedTime || 0);
+      if (!loadedGameState.isPaused) {
+        setLastUnpausedTime(Date.now());
       } else {
-        setIsPaused(true); // Set the paused state
+        setIsPaused(true);
       }
-      setLoading(false)
+      setLoading(false);
     }
-    initSavedState()
-  }, [])
+    initSavedState();
+  }, []);
+
+  const {
+    board: initialBoardFromHook, // Renamed to avoid conflict with local 'board' state
+    isAdjacent,
+    swapTile: seededSwapTile, // Renamed to use the seeded version
+    getPositionsThatAlmostMatch,
+    isGameOver,
+  } = useBoard(8, seed) // Pass the seed here
+
+  // Update the board state once initialBoardFromHook is available and not loading
+  useEffect(() => {
+    if (!loading && seed !== undefined && board.length === 0) { // Only set if board is empty
+      setBoard(initialBoardFromHook);
+    }
+  }, [loading, seed, initialBoardFromHook, board.length]);
+
+
   const [animating, setAnimating] = useState(false)
   const [selectedFrom, setSelectedFrom] = useState<Position | undefined>(
     undefined,
@@ -304,8 +344,8 @@ export default function Game() {
         startTime,
         stopTime: Date.now(), // Use current time as stop time
         score: points,
+        seed: seed ?? 0, // Ensure seed is always a number for saving
         moves,
-        seed: seed ?? 0,
         board: boardValues,
       }
       saveGameToHistory(entry)
@@ -345,19 +385,18 @@ export default function Game() {
       swipeToPosition = info.offset.y > 0 ? { y: y + 1, x } : { y: y - 1, x }
     }
     setSelectedFrom(undefined)
-    await swapTiles({ x, y }, swipeToPosition)
+    await handleSwapTiles({ x, y }, swipeToPosition) // Use the new handleSwapTiles
   }
 
-  async function swapTiles(a: Position, b: Position) {
+  async function handleSwapTiles(a: Position, b: Position) { // Renamed from swapTiles
     if (moves === 0 && !startTime) {
       setStartTime(Date.now())
       setLastUnpausedTime(Date.now()) // Initialize lastUnpausedTime on first move
-      if (!seed) {
-        setSeed(Math.floor(Math.random() * 1000000))
-      }
+      // No need to set seed here, it's already managed by useEffect or resetBoard
     }
     setPreviousState({ board, points, moves })
-    const boards = swapTile(a, b, board)
+    // Use the seededSwapTile returned from useBoard
+    const boards = seededSwapTile(a, b, board) 
     setMoves((moves) => moves + 1)
     setAnimating(true)
     const newBoardsHistory = [...boardsHistory, ...boards]
@@ -411,7 +450,7 @@ export default function Game() {
       setSelectedFrom(undefined)
       return
     }
-    swapTiles(selectedFrom, position)
+    await handleSwapTiles(selectedFrom, position) // Use the new handleSwapTiles
     setSelectedFrom(undefined)
   }
 
@@ -515,15 +554,18 @@ export default function Game() {
   const [grid, animate] = useAnimate()
 
   function resetBoard(): void {
-    const newBoard = generateBoard(8)
     const newSeed = Math.floor(Math.random() * 1000000)
+    setSeed(newSeed) // Set the component's seed state
+
+    const seededRandomFunc = createSeededRandom(newSeed);
+    const newBoard = generateBoard(8, seededRandomFunc) // Use seeded generateBoard
+
     saveGameState(newBoard, 0, 0, undefined, newSeed) // Reset timer variables
     setGameOverClosed(false)
     setIsLoadedFromHistory(false)
     setPoints(0)
     setMoves(0)
     setStartTime(undefined)
-    setSeed(newSeed)
     setDuration(undefined)
     setPausedAccumulatedTime(0) // Reset accumulated time
     setLastUnpausedTime(undefined) // Reset last unpaused time
@@ -540,13 +582,13 @@ export default function Game() {
         return
       }
       await new Promise((r) => setTimeout(r, 100))
-      await swapTiles(hintPositions[0], hintPositions[1])
+      await handleSwapTiles(hintPositions[0], hintPositions[1]) // Use the new handleSwapTiles
     }
 
     if (autoplay && !animating) {
       autoPlay()
     }
-  }, [autoplay, board, animating, getPositionsThatAlmostMatch, swapTiles])
+  }, [autoplay, board, animating, getPositionsThatAlmostMatch, handleSwapTiles]) // Add handleSwapTiles to dependencies
 
   function getHint(): void {
     const hintPositions = getPositionsThatAlmostMatch(board)

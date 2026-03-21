@@ -3,7 +3,9 @@ import {
   getContrastTextColor,
   getRandomTile,
   getTileColor,
+  RandomFunc, // Import RandomFunc type
 } from "@/hooks/useBoard"
+import { createSeededRandom } from "@/utils/seededRandom" // Import createSeededRandom
 
 export function encodeStateInURL(board: Board, points: number): string {
   const boardNumbers = board.flat().map((tile) => tile.value)
@@ -31,11 +33,16 @@ export function decodeStateFromURL(
     return undefined
   }
 
+  // Create a new seeded random function for use in this context.
+  // The ID of the tile doesn't need to be deterministic across reloads unless explicitly desired.
+  // Using Date.now() for a new "random" seed for the IDs.
+  const seededRandomFunc = createSeededRandom(Date.now()); 
+
   const board: Board = Array.from({ length: size }, (_, y) =>
     Array.from({ length: size }, (_, x) => {
       const index = y * size + x
       return {
-        ...getRandomTile(),
+        ...getRandomTile(seededRandomFunc), // Pass the seeded random function
         value: boardNumbers[index],
       }
     }),
@@ -55,14 +62,14 @@ function numbersToUrlSafeString(numbers: number[]): string {
   })
 
   // Convert binary string to bytes
-  const byteArray = new Uint8Array(binaryString.length / 8)
+  const byteArray = new Uint8Array(Math.ceil(binaryString.length / 8))
   for (let i = 0; i < byteArray.length; i++) {
-    byteArray[i] = parseInt(binaryString.slice(i * 8, (i + 1) * 8), 2)
+    const byteString = binaryString.slice(i * 8, (i + 1) * 8).padEnd(8, '0'); // Pad with '0' if needed
+    byteArray[i] = parseInt(byteString, 2)
   }
 
-  // Convert bytes to Base64 URL Safe String
-  const base64String = Buffer.from(byteArray)
-    .toString("base64")
+  // Convert bytes to Base64 URL Safe String using btoa
+  const base64String = btoa(String.fromCharCode(...byteArray))
     .replace(/\+/g, "-")
     .replace(/\//g, "_")
     .replace(/=+$/, "") // Trim padding
@@ -73,23 +80,26 @@ function urlSafeStringToNumbers(encodedString: string): number[] {
   // Convert Base64 URL Safe string back to Base64
   const base64String =
     encodedString.replace(/-/g, "+").replace(/_/g, "/") +
-    // Optionally add padding back if required by your decoding method
-    "==".substring(0, (3 * encodedString.length) % 4)
+    "===".substring(0, (3 * encodedString.length) % 4) // Re-add padding
 
-  // Decode from Base64 to bytes
-  const bytes = Buffer.from(base64String, "base64")
+  // Decode from Base64 to bytes using atob
+  const binaryString = atob(base64String);
+  const byteArray = new Uint8Array(binaryString.length);
+  for (let i = 0; i < binaryString.length; i++) {
+    byteArray[i] = binaryString.charCodeAt(i);
+  }
 
   // Convert bytes back to a binary string
-  let binaryString = ""
-  bytes.forEach((byte) => {
-    binaryString += byte.toString(2).padStart(8, "0")
+  let fullBinaryString = ""
+  byteArray.forEach((byte) => {
+    fullBinaryString += byte.toString(2).padStart(8, "0")
   })
 
   // Unpack binary string into numbers
   const numbers = []
-  for (let i = 0; i < binaryString.length; i += 4) {
+  for (let i = 0; i < fullBinaryString.length; i += 4) {
     // Parse each 4-bit segment into a number, adjust back to 1-16 range
-    numbers.push(parseInt(binaryString.slice(i, i + 4), 2) + 1)
+    numbers.push(parseInt(fullBinaryString.slice(i, i + 4), 2) + 1)
   }
 
   return numbers

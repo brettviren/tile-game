@@ -1,4 +1,7 @@
 import { useMemo } from "react"
+import { createSeededRandom } from "@/utils/seededRandom"
+
+export type RandomFunc = () => number // Define a type for the random function
 
 export type Tile =
   | { id: number; value: number; removed: false }
@@ -19,18 +22,18 @@ export type GameState = {
   lastUnpausedTime?: number // New
 }
 
-function getRandomTileId(): number {
-  return Math.random()
+function getRandomTileId(randomFunc: RandomFunc): number {
+  return randomFunc()
 }
 
-function getRandomTileValue(): number {
-  return Math.floor(Math.random() * 4) + 1
+function getRandomTileValue(randomFunc: RandomFunc): number {
+  return Math.floor(randomFunc() * 4) + 1
 }
 
-export function getRandomTile(): Tile {
+export function getRandomTile(randomFunc: RandomFunc): Tile {
   return {
-    id: getRandomTileId(),
-    value: getRandomTileValue(),
+    id: getRandomTileId(randomFunc),
+    value: getRandomTileValue(randomFunc),
     removed: false,
   }
 }
@@ -48,10 +51,10 @@ export function numberToPosition(number: number, board: Board) {
   return { x, y }
 }
 
-export function generateBoard(size: number): Board {
+export function generateBoard(size: number, randomFunc: RandomFunc): Board {
   const initialBoard = Array.from({ length: size }).map((_) =>
     Array.from({ length: size }).map((__) => {
-      return getRandomTile()
+      return getRandomTile(randomFunc)
     }),
   )
   let matchesOnBoard = getMatchesOnBoard(initialBoard)
@@ -60,7 +63,7 @@ export function generateBoard(size: number): Board {
       const { x, y } = match.origin
       initialBoard[x][y] = {
         ...initialBoard[x][y],
-        value: getRandomTileValue(),
+        value: getRandomTileValue(randomFunc),
       }
     }
     matchesOnBoard = getMatchesOnBoard(initialBoard)
@@ -182,7 +185,7 @@ export type BoardPoints = { board: Board; points: number }
 /**
  * The main thing. Returns a list of boards to be animated through
  */
-function swapTile(from: Position, to: Position, board: Board): BoardPoints[] {
+function swapTile(from: Position, to: Position, board: Board, randomFunc: RandomFunc): BoardPoints[] {
   const swappedBoard = copyBoard(board)
   swappedBoard[to.x][to.y] = board[from.x][from.y]
   swappedBoard[from.x][from.y] = board[to.x][to.y]
@@ -213,8 +216,8 @@ function swapTile(from: Position, to: Position, board: Board): BoardPoints[] {
     matchedTiles.push(toMatchedTile)
   }
 
-  const boardAfterGravity = moveTilesDown(matchedTiles, newBoard)
-  const boardAfterCombos = findAndDoCombos(boardAfterGravity[1])
+  const boardAfterGravity = moveTilesDown(matchedTiles, newBoard, randomFunc)
+  const boardAfterCombos = findAndDoCombos(boardAfterGravity[1], randomFunc)
 
   return [
     { board: swappedBoard, points: 0 },
@@ -232,9 +235,11 @@ function swapTile(from: Position, to: Position, board: Board): BoardPoints[] {
   ]
 }
 
+
 export function moveTilesDown(
   matchedTiles: MatchedTile[],
   board: Board,
+  randomFunc: RandomFunc,
 ): [Board, Board] {
   const boardWithRemovedTiles = copyBoard(board)
   for (const positionPairToRemove of matchedTiles) {
@@ -264,14 +269,14 @@ export function moveTilesDown(
     }
     // Fill in from top
     for (let y = 0; y < emptyTilesBelow; y++) {
-      newBoard[x][y] = getRandomTile()
+      newBoard[x][y] = getRandomTile(randomFunc)
     }
   }
 
   return [boardWithRemovedTiles, newBoard]
 }
 
-function findAndDoCombos(board: Board): BoardPoints[] {
+function findAndDoCombos(board: Board, randomFunc: RandomFunc): BoardPoints[] {
   let result: BoardPoints[] = []
   let matches = uniqueNewMatches(board)
 
@@ -285,7 +290,7 @@ function findAndDoCombos(board: Board): BoardPoints[] {
         value: match.newValue,
       }
     }
-    const resultAfterGravity = moveTilesDown(matches, newBoard)
+    const resultAfterGravity = moveTilesDown(matches, newBoard, randomFunc)
     result = [
       ...result,
       {
@@ -467,7 +472,7 @@ export function getGameStateAsString(
   return encodeURIComponent(JSON.stringify(gameState))
 }
 
-export function getStateFromString(s: string): GameState {
+export function getStateFromString(s: string, randomFunc: RandomFunc): GameState {
   const gameState = JSON.parse(decodeURIComponent(s))
   const size = gameState.size
   const boardNumbers = gameState.boardNumbers
@@ -477,7 +482,7 @@ export function getStateFromString(s: string): GameState {
     Array.from({ length: size }, (_, x) => {
       const index = y * size + x
       return {
-        ...getRandomTile(),
+        ...getRandomTile(randomFunc),
         value: boardNumbers[index],
       }
     }),
@@ -497,16 +502,27 @@ export function getStateFromString(s: string): GameState {
   }
 }
 
-export function useBoard(size: number) {
-  const board: Board = useMemo(() => generateBoard(size), [size])
+export function useBoard(size: number, externalSeed: number | undefined) {
+  const seededRandom = useMemo(() => {
+    // If no seed is provided, generate a random one using Math.random()
+    return createSeededRandom(externalSeed ?? Math.floor(Math.random() * 1000000));
+  }, [externalSeed]); // Re-create seededRandom if externalSeed changes
+
+  const board: Board = useMemo(() => generateBoard(size, seededRandom), [size, seededRandom]);
+
+  // Return the version of swapTile that uses the seededRandom
+  const seededSwapTile = useMemo(() => (from: Position, to: Position, board: Board) => {
+    return swapTile(from, to, board, seededRandom);
+  }, [seededRandom]);
+
 
   return {
     board,
-    swapTile,
-    getTileColor,
     isAdjacent,
-    getPositionsThatAlmostMatch,
     isGameOver,
-    getTileValue: getMatchedTile,
+    getPositionsThatAlmostMatch,
+    swapTile: seededSwapTile, // Export the seeded version of swapTile
+    getTileColor, // Keep this as it doesn't use randomness
+    getTileValue: getMatchedTile, // Keep this as it doesn't use randomness
   }
 }
