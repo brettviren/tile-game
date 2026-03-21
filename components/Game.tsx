@@ -49,27 +49,53 @@ function Timer({
   startTime,
   duration,
   formatTime,
+  isPaused,
+  togglePause,
+  pausedAccumulatedTime, // New prop
+  lastUnpausedTime, // New prop
 }: {
   startTime: number
   duration?: number
   formatTime: (ms: number) => string
+  isPaused: boolean
+  togglePause: () => void
+  pausedAccumulatedTime: number // New prop
+  lastUnpausedTime: number | undefined // New prop
 }) {
   const [elapsed, setElapsed] = useState<number>(0)
 
   useEffect(() => {
     let intervalId: number | undefined
-    if (duration === undefined) {
-      setElapsed(Date.now() - startTime)
+    if (duration === undefined && !isPaused) {
+      // Calculate elapsed time based on accumulated and current active segment
+      const currentElapsed =
+        pausedAccumulatedTime +
+        (lastUnpausedTime ? Date.now() - lastUnpausedTime : 0)
+      setElapsed(currentElapsed)
+
       intervalId = window.setInterval(() => {
-        setElapsed(Date.now() - startTime)
+        const currentElapsed =
+          pausedAccumulatedTime +
+          (lastUnpausedTime ? Date.now() - lastUnpausedTime : 0)
+        setElapsed(currentElapsed)
       }, 1000)
-    } else {
+    } else if (duration !== undefined) {
       setElapsed(duration)
+    } else if (isPaused) {
+      // When paused, display the accumulated time
+      setElapsed(pausedAccumulatedTime)
     }
     return () => window.clearInterval(intervalId)
-  }, [startTime, duration])
+  }, [startTime, duration, isPaused, pausedAccumulatedTime, lastUnpausedTime]) // Added new dependencies
 
-  return <button className="text-xl font-medium">{formatTime(elapsed)}</button>
+  return (
+    <button
+      className={`text-xl font-medium ${isPaused ? "text-gray-500" : ""}`}
+      onClick={togglePause}
+    >
+      {formatTime(elapsed)}
+    </button>
+  )
 }
 
 export default function Game() {
@@ -86,6 +112,14 @@ export default function Game() {
   const [startTime, setStartTime] = useState<number | undefined>(undefined)
   const [seed, setSeed] = useState<number | undefined>(undefined)
   const [duration, setDuration] = useState<number | undefined>(undefined)
+
+  // New state variables for accurate timer
+  const [pausedAccumulatedTime, setPausedAccumulatedTime] = useState<number>(0)
+  const [lastUnpausedTime, setLastUnpausedTime] = useState<number | undefined>(
+    undefined,
+  )
+
+  const [isPaused, setIsPaused] = useState(false)
   const [loading, setLoading] = useState(true)
   const [previousState, setPreviousState] = useState<{
     board: Board
@@ -120,14 +154,35 @@ export default function Game() {
     }
   }
 
+  // --- Start of togglePause function ---
+  const togglePause = () => {
+    if (isPaused) {
+      // Unpausing
+      setLastUnpausedTime(Date.now())
+    } else {
+      // Pausing
+      if (lastUnpausedTime !== undefined) {
+        setPausedAccumulatedTime(
+          (prev) => prev + (Date.now() - lastUnpausedTime),
+        )
+      }
+      setLastUnpausedTime(undefined) // Indicate it's paused
+    }
+    setIsPaused((prev) => !prev)
+  }
+  // --- End of togglePause function ---
+
   useEffect(() => {
     async function initSavedState() {
-      // First check if there's a game loaded from history
+      // ... (existing code)
       const loadedBoard = sessionStorage.getItem("loadedGameBoard")
       const loadedPoints = sessionStorage.getItem("loadedGamePoints")
       const loadedMoves = sessionStorage.getItem("loadedGameMoves")
       const loadedSeed = sessionStorage.getItem("loadedGameSeed")
       const loadedStartTime = sessionStorage.getItem("loadedGameStartTime")
+      const loadedPausedAccumulatedTime = sessionStorage.getItem(
+        "loadedPausedAccumulatedTime",
+      )
 
       if (loadedBoard && loadedPoints && loadedMoves && loadedSeed && loadedStartTime) {
         // Load the game from history
@@ -148,8 +203,9 @@ export default function Game() {
         setMoves(parseInt(loadedMoves))
         setSeed(parseInt(loadedSeed))
         setStartTime(parseInt(loadedStartTime))
+        setPausedAccumulatedTime(parseInt(loadedPausedAccumulatedTime ?? "0"))
         setDuration(0) // Force game over state
-      setIsLoadedFromHistory(true) // Force game over screen
+        setIsLoadedFromHistory(true) // Force game over screen
 
         // Clear the loaded game flags
         sessionStorage.removeItem("loadedGameBoard")
@@ -157,6 +213,8 @@ export default function Game() {
         sessionStorage.removeItem("loadedGameMoves")
         sessionStorage.removeItem("loadedGameSeed")
         sessionStorage.removeItem("loadedGameStartTime")
+        sessionStorage.removeItem("loadedPausedAccumulatedTime")
+
 
         setLoading(false)
         return
@@ -174,6 +232,13 @@ export default function Game() {
       setStartTime(gameState.startTime)
       setSeed(gameState.seed)
       setDuration(gameState.duration)
+      // New: Load pausedAccumulatedTime and set lastUnpausedTime if not paused
+      setPausedAccumulatedTime(gameState.pausedAccumulatedTime || 0)
+      if (!gameState.isPaused) {
+        setLastUnpausedTime(Date.now()) // Assume it was running if not explicitly paused
+      } else {
+        setIsPaused(true); // Set the paused state
+      }
       setLoading(false)
     }
     initSavedState()
@@ -225,16 +290,19 @@ export default function Game() {
       startTime &&
       duration === undefined
     ) {
-      const stopTime = Date.now()
-      const d = stopTime - startTime
-      setDuration(d)
+      // Calculate final duration based on accumulated active time
+      let finalDuration = pausedAccumulatedTime;
+      if (!isPaused && lastUnpausedTime) {
+        finalDuration += Date.now() - lastUnpausedTime;
+      }
+      setDuration(finalDuration)
 
       // Serialize board to a simple array of values
       const boardValues = board.flat().map((tile) => tile.value)
 
       const entry = {
         startTime,
-        stopTime,
+        stopTime: Date.now(), // Use current time as stop time
         score: points,
         moves,
         seed: seed ?? 0,
@@ -242,7 +310,7 @@ export default function Game() {
       }
       saveGameToHistory(entry)
     }
-  }, [board, animating, startTime, duration, isGameOver, points, moves, seed])
+  }, [board, animating, startTime, duration, isGameOver, points, moves, seed, isPaused, pausedAccumulatedTime, lastUnpausedTime]) // Added new dependencies
 
 
   function formatTime(ms: number) {
@@ -265,7 +333,7 @@ export default function Game() {
     info: PanInfo,
     { x, y }: Position,
   ) {
-    if (animating) {
+    if (animating || isPaused) {
       return
     }
     const offsetX = Math.abs(info.offset.x)
@@ -283,6 +351,7 @@ export default function Game() {
   async function swapTiles(a: Position, b: Position) {
     if (moves === 0 && !startTime) {
       setStartTime(Date.now())
+      setLastUnpausedTime(Date.now()) // Initialize lastUnpausedTime on first move
       if (!seed) {
         setSeed(Math.floor(Math.random() * 1000000))
       }
@@ -328,7 +397,7 @@ export default function Game() {
   }
 
   async function clickTile(position: Position) {
-    if (animating) {
+    if (animating || isPaused) {
       return
     }
     if (!selectedFrom) {
@@ -350,7 +419,18 @@ export default function Game() {
     if (animating) {
       return
     }
-    saveGameState(board, points, moves, startTime, seed, duration)
+    // Save game state including new timer variables
+    saveGameState(
+      board,
+      points,
+      moves,
+      startTime,
+      seed,
+      duration,
+      isPaused, // New: save isPaused state
+      pausedAccumulatedTime, // New: save accumulated time
+      lastUnpausedTime, // New: save lastUnpausedTime
+    )
     async function checkHighscore() {
       if (!animating && !debug) {
         const highscore = await getHighscore()
@@ -374,7 +454,23 @@ export default function Game() {
       }
     }
     checkHighscore()
-  }, [board, points, animating, startTime, seed, duration, animationSpeed, debug, highscore, isGameOver, moves, player])
+  }, [
+    board,
+    points,
+    animating,
+    startTime,
+    seed,
+    duration,
+    animationSpeed,
+    debug,
+    highscore,
+    isGameOver,
+    moves,
+    player,
+    isPaused, // New dependency
+    pausedAccumulatedTime, // New dependency
+    lastUnpausedTime, // New dependency
+  ])
   useEffect(() => {
     // Sync score with leaderboards, in case they got a highscore while offline.
     // also sometimes submitting scores just don't work
@@ -421,7 +517,7 @@ export default function Game() {
   function resetBoard(): void {
     const newBoard = generateBoard(8)
     const newSeed = Math.floor(Math.random() * 1000000)
-    saveGameState(newBoard, 0, 0, undefined, newSeed)
+    saveGameState(newBoard, 0, 0, undefined, newSeed) // Reset timer variables
     setGameOverClosed(false)
     setIsLoadedFromHistory(false)
     setPoints(0)
@@ -429,6 +525,9 @@ export default function Game() {
     setStartTime(undefined)
     setSeed(newSeed)
     setDuration(undefined)
+    setPausedAccumulatedTime(0) // Reset accumulated time
+    setLastUnpausedTime(undefined) // Reset last unpaused time
+    setIsPaused(false) // Ensure timer is not paused on reset
     setBoard(newBoard)
     setPreviousState(undefined)
   }
@@ -481,78 +580,80 @@ export default function Game() {
   }
 
   return (
-      <div
-          className={`flex pb-8 ${gamePosition == "top" ? "flex-col" : "flex-col-reverse "} items-center`}
-          ref={myDiv}
+    <div
+      className={`flex pb-8 ${gamePosition == "top" ? "flex-col" : "flex-col-reverse "} items-center`}
+      ref={myDiv}
+    >
+      <Tutorial />
+      <motion.div
+        layout
+        className={`flex flex-1 transition ${gamePosition == "top" ? "flex-col justify-start" : "flex-col-reverse gap-8"}`}
       >
-          <Tutorial />
-          <motion.div
-              layout
-              className={`flex flex-1 transition ${gamePosition == "top" ? "flex-col justify-start" : "flex-col-reverse gap-8"}`}
-          >
-              <main
-                  className="relative grid w-screen grid-cols-8 grid-rows-8 items-center gap-0.5 p-1 sm:w-full sm:gap-2 sm:p-4 touch-none"
-                  ref={grid}
-              >
-                  <AnimatePresence>
-{(isGameOver(board) || isLoadedFromHistory) && !animating && !gameOverClosed && (
-              <motion.div
-                className="absolute left-0 top-0 z-20 flex h-full w-full items-center justify-center"
-                initial={{ opacity: 0, scale: 0.5 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0 }}
-                transition={{ type: "spring", stiffness: 400, damping: 15 }}
-              >
-                <div className="flex flex-col rounded bg-white/80 px-6 pb-6 pt-2 dark:bg-black/80">
-                  <button
-                    className="self-end"
-                    onClick={() => setGameOverClosed(true)}
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      strokeWidth={1.5}
-                      stroke="currentColor"
-                      className="h-6 w-6 "
+        <main
+          className="relative grid w-screen grid-cols-8 grid-rows-8 items-center gap-0.5 p-1 sm:w-full sm:gap-2 sm:p-4 touch-none"
+          ref={grid}
+        >
+          <AnimatePresence>
+            {(isGameOver(board) || isLoadedFromHistory) &&
+              !animating &&
+              !gameOverClosed && (
+                <motion.div
+                  className="absolute left-0 top-0 z-20 flex h-full w-full items-center justify-center"
+                  initial={{ opacity: 0, scale: 0.5 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 15 }}
+                >
+                  <div className="flex flex-col rounded bg-white/80 px-6 pb-6 pt-2 dark:bg-black/80">
+                    <button
+                      className="self-end"
+                      onClick={() => setGameOverClosed(true)}
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M6 18 18 6M6 6l12 12"
-                      />
-                    </svg>
-                  </button>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        strokeWidth={1.5}
+                        stroke="currentColor"
+                        className="h-6 w-6 "
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M6 18 18 6M6 6l12 12"
+                        />
+                      </svg>
+                    </button>
 
-                  <motion.h1 className="mb-6 text-5xl font-bold text-blue-100 [text-shadow:_3px_3px_0_#0a9396,_6px_6px_0_#ee9b00,_9px_9px_0_#005f73]">
-                    Game Over
-                  </motion.h1>
-                  <div className="mb-4 flex justify-between px-8 text-lg">
-                    <span>Moves</span>
-                    <span className="font-medium">
-                      {moves.toLocaleString()}
-                    </span>
-                  </div>
-                  {duration !== undefined && (
+                    <motion.h1 className="mb-6 text-5xl font-bold text-blue-100 [text-shadow:_3px_3px_0_#0a9396,_6px_6px_0_#ee9b00,_9px_9px_0_#005f73]">
+                      Game Over
+                    </motion.h1>
                     <div className="mb-4 flex justify-between px-8 text-lg">
-                      <span>Time</span>
+                      <span>Moves</span>
                       <span className="font-medium">
-                        {formatTime(duration)}
+                        {moves.toLocaleString()}
                       </span>
                     </div>
-                  )}
-                  <ShareButton board={board} points={points} moves={moves} />
-                  <Button
-                    onClick={() => {
-                      resetBoard()
-                    }}
-                    className="mt-2 flex justify-center gap-3"
-                  >
-                    New game
-                  </Button>
-                </div>
-              </motion.div>
-            )}
+                    {duration !== undefined && (
+                      <div className="mb-4 flex justify-between px-8 text-lg">
+                        <span>Time</span>
+                        <span className="font-medium">
+                          {formatTime(duration)}
+                        </span>
+                      </div>
+                    )}
+                    <ShareButton board={board} points={points} moves={moves} />
+                    <Button
+                      onClick={() => {
+                        resetBoard()
+                      }}
+                      className="mt-2 flex justify-center gap-3"
+                    >
+                      New game
+                    </Button>
+                  </div>
+                </motion.div>
+              )}
           </AnimatePresence>
           <AnimatePresence mode="popLayout">
             {board.map((row, y) =>
@@ -560,7 +661,7 @@ export default function Game() {
                 <motion.button
                   onPanEnd={(event, info) => onPanEnd(event, info, { x, y })}
                   transition={transition}
-                  disabled={animating}
+                  disabled={animating || isPaused} // New: disable tiles when paused
                   layout
                   data-pos={`${x}${y}`}
                   onContextMenu={(event) => {
@@ -632,13 +733,15 @@ export default function Game() {
               Undo
             </button>
             {startTime && (
-              <Link href="/history">
-                <Timer
-                  startTime={startTime}
-                  duration={duration}
-                  formatTime={formatTime}
-                />
-              </Link>
+              <Timer
+                startTime={startTime}
+                duration={duration}
+                formatTime={formatTime}
+                isPaused={isPaused}
+                togglePause={togglePause} // Use the new togglePause function
+                pausedAccumulatedTime={pausedAccumulatedTime} // Pass new prop
+                lastUnpausedTime={lastUnpausedTime} // Pass new prop
+              />
             )}
             <button
               onClick={() =>
@@ -696,9 +799,9 @@ export default function Game() {
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
               >
                 <path d="M7.21 15 2.66 7.14a2 2 0 0 1 .13-2.2L4.4 2.8A2 2 0 0 1 6 2h12a2 2 0 0 1 1.6.8l1.6 2.14a2 2 0 0 1 .14 2.2L16.79 15" />
                 <path d="M11 12 5.12 2.2" />

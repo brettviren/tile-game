@@ -14,6 +14,9 @@ export type GameState = {
   startTime?: number
   seed?: number
   duration?: number
+  isPaused: boolean // New
+  pausedAccumulatedTime: number // New
+  lastUnpausedTime?: number // New
 }
 
 function getRandomTileId(): number {
@@ -347,7 +350,7 @@ function getMatchesOnBoard(board: Board): MatchedTile[] {
     .flat()
     .filter((x) => x != undefined) as MatchedTile[]
 }
-function isGameOver(board: Board): boolean {
+export function isGameOver(board: Board): boolean {
   return getPositionsThatAlmostMatch(board) == undefined
 }
 
@@ -428,7 +431,7 @@ export function getContrastTextColor(hexColor: string): string {
     )
 
   const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b
-
+  
   return luminance > 0.5 ? "#101050" : "#fafafa"
 }
 
@@ -439,6 +442,9 @@ export function getGameStateAsString(
   startTime?: number,
   seed?: number,
   duration?: number,
+  isPaused: boolean = false, // New parameter
+  pausedAccumulatedTime: number = 0, // New parameter
+  lastUnpausedTime?: number, // New parameter
 ) {
   // Convert board positions to numbers for easier serialization
   const boardNumbers = board.flat().map((tile) => tile.value) // Assuming tile.value is a number
@@ -452,6 +458,9 @@ export function getGameStateAsString(
     startTime,
     seed,
     duration,
+    isPaused, // New
+    pausedAccumulatedTime, // New
+    lastUnpausedTime, // New
   }
 
   // Serialize game state object to JSON and store in a cookie
@@ -482,6 +491,9 @@ export function getStateFromString(s: string): GameState {
     startTime: gameState.startTime,
     seed: gameState.seed,
     duration: gameState.duration,
+    isPaused: gameState.isPaused ?? false, // New: default to false
+    pausedAccumulatedTime: gameState.pausedAccumulatedTime ?? 0, // New: default to 0
+    lastUnpausedTime: gameState.lastUnpausedTime, // New
   }
 }
 

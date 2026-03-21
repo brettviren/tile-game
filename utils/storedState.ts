@@ -101,6 +101,9 @@ export async function saveGameState(
   startTime?: number,
   seed?: number,
   duration?: number,
+  isPaused: boolean = false, // New parameter
+  pausedAccumulatedTime: number = 0, // New parameter
+  lastUnpausedTime?: number, // New parameter
 ) {
   const gameStateString = getGameStateAsString(
     board,
@@ -109,6 +112,9 @@ export async function saveGameState(
     startTime,
     seed,
     duration,
+    isPaused,
+    pausedAccumulatedTime,
+    lastUnpausedTime,
   )
   await saveToPersistedState({ key: "gameState", value: gameStateString })
 }
