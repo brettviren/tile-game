@@ -35,6 +35,7 @@ This fork has the following completed and planned changes:
 - [X] Add timer pause
 - [X] Allow setting seed via URL parameter.
   - eg append ~?seed=12345~ to the URL
+- [X] fix regression so reloading page does not revert timer.
 - [ ] History: Add link to replay a given seed on seed entry.
 - [ ] History: sort by duration.
 - [ ] Make "instantaneous" speed, truly so and make current "instantaneous"  merely "super fast"
@@ -55,7 +56,7 @@ $ deno task serve
 Note, the build sometimes hangs while =deno= and other tools show no CPU usage.  I don't know the reason but this seems to clear up what is going bad:
 
 #+begin_example
-$ rm -r .next
+$ rm -r out
 $ deno task build
 #+end_example
 

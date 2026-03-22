@@ -5,7 +5,7 @@ import { ChevronUp, ChevronDown, ArrowLeft, Play } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 
-type SortKey = keyof GameHistoryEntry
+type SortKey = "duration" | keyof GameHistoryEntry
 type SortOrder = "asc" | "desc"
 
 // Mini board component to display a snapshot of the game
@@ -65,8 +65,17 @@ export default function HistoryPage() {
   }, [])
 
   const sortedHistory = [...history].sort((a, b) => {
-    const aVal = a[sortKey]
-    const bVal = b[sortKey]
+    let aVal: any
+    let bVal: any
+
+    if (sortKey === "duration") {
+      aVal = a.stopTime - a.startTime
+      bVal = b.stopTime - b.startTime
+    } else {
+      aVal = a[sortKey as keyof GameHistoryEntry]
+      bVal = b[sortKey as keyof GameHistoryEntry]
+    }
+
     if (aVal < bVal) return sortOrder === "asc" ? -1 : 1
     if (aVal > bVal) return sortOrder === "asc" ? 1 : -1
     return 0
@@ -152,7 +161,9 @@ export default function HistoryPage() {
               <th className="p-4 whitespace-nowrap">
                 <SortButton k="stopTime" label="Finished" />
               </th>
-              <th className="p-4 font-semibold whitespace-nowrap">Duration</th>
+              <th className="p-4 whitespace-nowrap">
+                <SortButton k="duration" label="Duration" />
+              </th>
               <th className="p-4 whitespace-nowrap">
                 <SortButton k="score" label="Score" />
               </th>
@@ -191,7 +202,14 @@ export default function HistoryPage() {
                     {entry.score.toLocaleString()}
                   </td>
                   <td className="p-4">{entry.moves.toLocaleString()}</td>
-                  <td className="p-4 font-mono text-xs">{entry.seed}</td>
+                  <td className="p-4 font-mono text-xs">
+                    <Link
+                      href={`../exponentile?seed=${entry.seed}`}
+                      className="text-blue-600 hover:underline dark:text-blue-400"
+                    >
+                      {entry.seed}
+                    </Link>
+                  </td>
                   <td className="p-4">
                     <button
                       onClick={() => loadGame(entry)}

@@ -269,10 +269,9 @@ export default function Game() {
       setStartTime(loadedGameState.startTime);
       setDuration(loadedGameState.duration);
       setPausedAccumulatedTime(loadedGameState.pausedAccumulatedTime || 0);
+      setIsPaused(loadedGameState.isPaused); // Set isPaused directly
       if (!loadedGameState.isPaused) {
-        setLastUnpausedTime(Date.now());
-      } else {
-        setIsPaused(true);
+        setLastUnpausedTime(loadedGameState.lastUnpausedTime); // Use loaded lastUnpausedTime
       }
       setLoading(false);
     }
