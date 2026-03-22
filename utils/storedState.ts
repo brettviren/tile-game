@@ -5,9 +5,7 @@ import {
   GameState,
   getGameStateAsString,
   getStateFromString,
-  RandomFunc, // New: Import RandomFunc type
 } from "@/hooks/useBoard"
-import { createSeededRandom } from "@/utils/seededRandom" // New: Import createSeededRandom
 
 export type GameHistoryEntry = {
   startTime: number
@@ -126,22 +124,12 @@ export async function getGameState(): Promise<GameState | undefined> {
   if (!gameStateString) {
     return undefined
   }
-  
-  // Temporarily parse the string to get the seed
-  let tempGameState: GameState;
+  // We need to parse the string to a GameState object.
+  // The board itself is not reconstructed here, only the raw data.
   try {
-    const decodedString = decodeURIComponent(gameStateString);
-    tempGameState = JSON.parse(decodedString);
+    return JSON.parse(decodeURIComponent(gameStateString)) as GameState;
   } catch (e) {
-    console.error("Error parsing gameStateString:", e);
+    console.error("Error parsing stored gameStateString:", e);
     return undefined;
   }
-
-  // Ensure a seed exists; if not, generate a new random one
-  // Note: if tempGameState.seed is undefined, it means an old game state without seed was saved.
-  // In this case, we'll generate a random seed for determinism in reconstructing that old board.
-  const seedToUse = tempGameState.seed ?? Math.floor(Math.random() * 1000000);
-  const seededRandomFunc: RandomFunc = createSeededRandom(seedToUse);
-
-  return getStateFromString(gameStateString, seededRandomFunc)
 }

@@ -9,6 +9,7 @@ import {
   getRandomTile,
   RandomFunc, // Import RandomFunc type
   getStateFromString, // Import getStateFromString
+  GameState, // Import GameState type
 } from "@/hooks/useBoard"
 import { createSeededRandom } from "@/utils/seededRandom" // Import createSeededRandom
 import {
@@ -33,6 +34,7 @@ import {
   saveGameToHistory,
   saveToPersistedState,
   setHighscore,
+  getFromPersistedState, // Import getFromPersistedState
 } from "@/utils/storedState"
 import { boardContains2048Tile } from "@/utils/achievements"
 import Button from "./Button"
@@ -232,9 +234,9 @@ export default function Game() {
         setLoading(false);
         return;
       }
-
-      const gameState = await getGameState();
-      if (!gameState || gameState.points == 0) {
+      
+      const rawGameStateString = await getFromPersistedState({ key: "gameState" }); // Get the raw string
+      if (!rawGameStateString) { // No saved game data
         // If no saved state, use URL seed or generate a new random one
         const newSeed = initialSeed ?? Math.floor(Math.random() * 1000000);
         setSeed(newSeed); // Set the seed state
@@ -242,14 +244,24 @@ export default function Game() {
         setLoading(false);
         return;
       }
-      
+
+      // Parse the raw game state string to get the GameState object and extract the seed
+      let parsedGameState: GameState;
+      try {
+        parsedGameState = JSON.parse(decodeURIComponent(rawGameStateString));
+      } catch (e) {
+        console.error("Error parsing rawGameStateString:", e);
+        setLoading(false);
+        return;
+      }
+
       // If saved state, use URL seed if present, otherwise use saved seed
-      const seedToUse = initialSeed ?? gameState.seed ?? Math.floor(Math.random() * 1000000);
+      const seedToUse = initialSeed ?? parsedGameState.seed ?? Math.floor(Math.random() * 1000000);
       setSeed(seedToUse); // Set the seed state
 
       // When loading gameState, use the getStateFromString function which now takes randomFunc
       const seededRandomFunc = createSeededRandom(seedToUse);
-      const loadedGameState = getStateFromString(encodeURIComponent(JSON.stringify(gameState)), seededRandomFunc);
+      const loadedGameState = getStateFromString(rawGameStateString, seededRandomFunc);
       
       setBoard(loadedGameState.board);
       setPoints(loadedGameState.points);
