@@ -183,6 +183,10 @@ export default function Game() {
           console.warn("Invalid seed provided in URL, generating a random one.");
           initialSeed = Math.floor(Math.random() * 1000000);
         }
+        // Remove seed from URL to prevent it from being used again on reload
+        const url = new URL(window.location.href);
+        url.searchParams.delete("seed");
+        window.history.replaceState({}, "", url.toString());
       }
 
       const loadedBoard = sessionStorage.getItem("loadedGameBoard")
@@ -195,8 +199,8 @@ export default function Game() {
       )
 
       if (loadedBoard && loadedPoints && loadedMoves && loadedSeed && loadedStartTime) {
-        // Use URL seed if present, otherwise use loaded seed
-        const seedToUse = initialSeed ?? parseInt(loadedSeed);
+        // Use the seed that goes with the loaded board
+        const seedToUse = parseInt(loadedSeed);
         setSeed(seedToUse); // Set the seed state
 
         const seededRandomFunc = createSeededRandom(seedToUse);
@@ -251,12 +255,23 @@ export default function Game() {
         parsedGameState = JSON.parse(decodeURIComponent(rawGameStateString));
       } catch (e) {
         console.error("Error parsing rawGameStateString:", e);
+        // Start a new game with the URL seed if it exists, or a random one.
+        const newSeed = initialSeed ?? Math.floor(Math.random() * 1000000);
+        setSeed(newSeed);
+        setLoading(false);
+        return;
+      }
+
+      // If we have an initial seed and it differs from the saved seed, 
+      // we treat it as an explicit request for a new game.
+      if (initialSeed !== undefined && parsedGameState.seed !== initialSeed) {
+        setSeed(initialSeed);
         setLoading(false);
         return;
       }
 
       // If saved state, use URL seed if present, otherwise use saved seed
-      const seedToUse = initialSeed ?? parsedGameState.seed ?? Math.floor(Math.random() * 1000000);
+      const seedToUse = parsedGameState.seed ?? initialSeed ?? Math.floor(Math.random() * 1000000);
       setSeed(seedToUse); // Set the seed state
 
       // When loading gameState, use the getStateFromString function which now takes randomFunc

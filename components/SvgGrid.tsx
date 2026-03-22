@@ -1,4 +1,5 @@
 import { Board, getContrastTextColor, getTileColor } from "@/hooks/useBoard"
+import Image from "next/image"
 import { useEffect, useRef, useState } from "react"
 
 const SvgGrid = ({ board }: { board: Board }) => {
@@ -18,7 +19,7 @@ const SvgGrid = ({ board }: { board: Board }) => {
     const blob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" })
     const url = URL.createObjectURL(blob)
 
-    const img = new Image()
+    const img = new window.Image()
     img.onload = function () {
       const canvas = document.createElement("canvas")
       canvas.width =
@@ -113,7 +114,9 @@ src: url(${interDataUrl}) format('woff2');
           }),
         )}
       </svg>
-      {pngUrl && <img src={pngUrl} className="size-96" alt="Converted PNG" />}
+      {pngUrl && (
+        <Image src={pngUrl} width={96} height={96} alt="Converted PNG" />
+      )}
     </div>
   )
 }

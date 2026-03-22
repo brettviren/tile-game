@@ -1,4 +1,5 @@
 import { finishedTutorial, isTutorialDone } from "@/utils/storedState"
+import Image from "next/image"
 import { AnimatePresence, motion } from "framer-motion"
 import { useEffect, useState } from "react"
 
@@ -35,10 +36,12 @@ export default function Tutorial() {
       exit="exit"
     >
       <div className="h-max w-full rounded border border-white p-2">
-        <img
+        <Image
           src={`${process.env.NEXT_PUBLIC_BASE_PATH || ""}/tutorial1.jpg`}
-          className="h-full w-full"
           alt="Step 1: Swap tiles to match three or more"
+          fill
+          sizes="100vw"
+          style={{ objectFit: "cover" }}
         />
       </div>
       <div className="mt-4 flex flex-col gap-4">
@@ -61,10 +64,12 @@ export default function Tutorial() {
       exit="exit"
     >
       <div className="h-max w-full rounded border border-white p-2">
-        <img
+        <Image
           src={`${process.env.NEXT_PUBLIC_BASE_PATH || ""}/tutorial2.jpg`}
-          className="h-full w-full"
           alt="Step 2: Larger matches result in higher value tiles"
+          fill
+          sizes="100vw"
+          style={{ objectFit: "cover" }}
         />
       </div>
       <div className="mt-4 flex flex-col gap-4">
