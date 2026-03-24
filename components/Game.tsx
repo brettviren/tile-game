@@ -24,7 +24,7 @@ import { CapacitorGameConnect } from "@openforge/capacitor-game-connect"
 import { Capacitor } from "@capacitor/core"
 import { useEffect, useRef, useState } from "react"
 import Tile from "./Tile"
-import Tutorial from "./Tutorial"
+// import Tutorial from "./Tutorial"
 import Settings from "./Settings"
 import { AnimationSpeeds, useSettings } from "@/hooks/useSettings"
 import {
@@ -674,7 +674,6 @@ export default function Game() {
       className={`flex pb-8 ${gamePosition == "top" ? "flex-col" : "flex-col-reverse "} items-center`}
       ref={myDiv}
     >
-      <Tutorial />
       <motion.div
         layout
         className={`flex flex-1 transition ${gamePosition == "top" ? "flex-col justify-start" : "flex-col-reverse gap-8"}`}
@@ -814,7 +813,7 @@ export default function Game() {
               onClick={getHint}
               className="w-fit rounded-xl bg-gradient-to-bl from-indigo-500 to-indigo-600 px-6 py-2 text-lg font-medium text-white"
             >
-              Get hint
+              Hint
             </button>
             <button
               onClick={undo}
