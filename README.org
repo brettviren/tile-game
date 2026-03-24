@@ -38,7 +38,7 @@ This fork has the following completed and planned changes:
 - [X] fix regression so reloading page does not revert timer.
 - [X] History: Add link to replay a given seed on seed entry.
 - [X] History: sort by duration.
-- [X] Make "instantaneous" speed (turbo), truly so and make current "instantaneous" merely "super fast"
+- [X] Make "instant" speed closer to actually being instantaneous and add "turbo" as a faster version of the old "instant".
 - [X] Fixed color transition delay (reduced from 700ms to match animation speed)
 - [ ] Convert from local storage to indexdb
 - [ ] History: plot distributions of scores, duration and moves.

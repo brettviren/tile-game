@@ -429,7 +429,7 @@ export default function Game() {
     setMoves((moves) => moves + 1)
     setAnimating(true)
     let soundsPlayed = 0
-    if (animationSpeed === "turbo") {
+    if (animationSpeed === "instant") {
       const lastBoard = boards[boards.length - 1]
       const totalPoints = boards.reduce((acc, b) => acc + b.points, 0)
       setBoard(lastBoard.board)
@@ -627,7 +627,7 @@ export default function Game() {
       if (!hintPositions) {
         return
       }
-      if (animationSpeed !== "turbo") {
+      if (animationSpeed !== "instant") {
         await new Promise((r) => setTimeout(r, animationDuration * 1000))
       }
       await handleSwapTiles(hintPositions[0], hintPositions[1]) // Use the new handleSwapTiles

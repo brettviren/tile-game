@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react"
 
 export const AnimationSpeeds = {
-  turbo: 0.001,
-  instant: 0.05,
+  instant: 0.001,
+  turbo: 0.05,
   fast: 0.2,
   medium: 0.4,
   slow: 0.7,
