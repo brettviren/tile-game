@@ -36,9 +36,10 @@ This fork has the following completed and planned changes:
 - [X] Allow setting seed via URL parameter.
   - eg append ~?seed=12345~ to the URL
 - [X] fix regression so reloading page does not revert timer.
-- [ ] History: Add link to replay a given seed on seed entry.
-- [ ] History: sort by duration.
-- [ ] Make "instantaneous" speed, truly so and make current "instantaneous"  merely "super fast"
+- [X] History: Add link to replay a given seed on seed entry.
+- [X] History: sort by duration.
+- [X] Make "instantaneous" speed (turbo), truly so and make current "instantaneous" merely "super fast"
+- [X] Fixed color transition delay (reduced from 700ms to match animation speed)
 - [ ] Convert from local storage to indexdb
 - [ ] History: plot distributions of scores, duration and moves.
 - [ ] History: plot scores, duration and moves vs time.

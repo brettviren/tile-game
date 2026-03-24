@@ -11,9 +11,11 @@ function usePrevious<T>(value: T) {
 export default function Tile({
   tile,
   selected,
+  animationDuration,
 }: {
   tile: Tile
   selected: boolean
+  animationDuration: number
 }) {
   const [scope, animate] = useAnimate()
   const previousValue = usePrevious(tile.value)
@@ -21,14 +23,18 @@ export default function Tile({
 
   useEffect(() => {
     // We only want to animate when the tile changes value from a combo. Not when a new tile lands.
-    if (previousValue !== undefined && tile.value !== previousValue) {
+    if (
+      previousValue !== undefined &&
+      tile.value !== previousValue &&
+      animationDuration > 0
+    ) {
       const sequence: AnimationSequence = [
         [scope.current, { scale: 1.3, border: "10px solid white" }],
         [scope.current, { scale: 1, border: "none" }],
       ]
-      animate(sequence)
+      animate(sequence, { duration: animationDuration })
     }
-  }, [tile.value, animate, previousValue, scope])
+  }, [tile.value, animate, previousValue, scope, animationDuration])
   return (
     <motion.div
       whileTap={{ scale: 0.98 }}
@@ -37,8 +43,9 @@ export default function Tile({
         background: color,
         color: getContrastTextColor(color),
         willChange: "transform",
+        transitionDuration: `${animationDuration}s`,
       }}
-      className={`flex h-full w-full select-none items-center justify-center rounded font-bold text-black transition-colors duration-700 ${
+      className={`flex h-full w-full select-none items-center justify-center rounded font-bold text-black transition-colors ${
         selected ? "ring ring-yellow-400" : ""
       } ${tile.value > 9 ? "text-sm md:text-xl" : "text-xl md:text-2xl"} ${tile.value > 10 && "text-base ring-2 ring-orange-400 md:text-xl"}`}
       ref={scope}

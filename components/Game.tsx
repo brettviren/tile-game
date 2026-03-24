@@ -310,12 +310,10 @@ export default function Game() {
 
 
   const [animating, setAnimating] = useState(false)
+  const isProcessingMove = useRef(false)
   const [selectedFrom, setSelectedFrom] = useState<Position | undefined>(
     undefined,
   )
-  const [boardsHistory, setBoardsHistory] = useState<BoardPoints[]>([
-    { board, points: 0 },
-  ])
 
   const [debug, setDebug] = useState(false)
 
@@ -392,14 +390,17 @@ export default function Game() {
   }
   const animationDuration = AnimationSpeeds[animationSpeed]
 
-  const transition: Transition = { type: "spring", duration: animationDuration }
+  const transition: Transition =
+    animationSpeed === "instant" || animationSpeed === "turbo"
+      ? { type: "tween", duration: animationDuration }
+      : { type: "spring", duration: animationDuration }
 
   async function onPanEnd(
     _: MouseEvent | TouchEvent | PointerEvent,
     info: PanInfo,
     { x, y }: Position,
   ) {
-    if (animating || isPaused) {
+    if (animating || isPaused || isProcessingMove.current) {
       return
     }
     const offsetX = Math.abs(info.offset.x)
@@ -415,6 +416,8 @@ export default function Game() {
   }
 
   async function handleSwapTiles(a: Position, b: Position) { // Renamed from swapTiles
+    if (isProcessingMove.current || isPaused) return
+    isProcessingMove.current = true
     if (moves === 0 && !startTime) {
       setStartTime(Date.now())
       setLastUnpausedTime(Date.now()) // Initialize lastUnpausedTime on first move
@@ -425,18 +428,28 @@ export default function Game() {
     const boards = seededSwapTile(a, b, board) 
     setMoves((moves) => moves + 1)
     setAnimating(true)
-    const newBoardsHistory = [...boardsHistory, ...boards]
-    setBoardsHistory(newBoardsHistory)
     let soundsPlayed = 0
-    for (const [index, newBoard] of boards.entries()) {
-      setBoard(newBoard.board)
-      if (newBoard.points > 0 && !muted) {
-        play(Math.min(Math.pow(2, 0.4 * soundsPlayed), 2.5))
-        soundsPlayed++
+    if (animationSpeed === "turbo") {
+      const lastBoard = boards[boards.length - 1]
+      const totalPoints = boards.reduce((acc, b) => acc + b.points, 0)
+      setBoard(lastBoard.board)
+      if (totalPoints > 0 && !muted) {
+        play(1.0)
       }
-      setPoints((currentPoints) => currentPoints + newBoard.points)
-      if (index < boards.length - 1) {
-        await new Promise((r) => setTimeout(r, animationDuration * 1000 + 100))
+      setPoints((currentPoints) => currentPoints + totalPoints)
+      // Small delay to ensure state is committed and browser has a tick to render
+      await new Promise((r) => setTimeout(r, 50))
+    } else {
+      for (const [index, newBoard] of boards.entries()) {
+        setBoard(newBoard.board)
+        if (newBoard.points > 0 && !muted) {
+          play(Math.min(Math.pow(2, 0.4 * soundsPlayed), 2.5))
+          soundsPlayed++
+        }
+        setPoints((currentPoints) => currentPoints + newBoard.points)
+        if (index < boards.length - 1) {
+            await new Promise((r) => setTimeout(r, animationDuration * 1000))
+        }
       }
     }
     if (boardContains2048Tile(board)) {
@@ -448,10 +461,11 @@ export default function Game() {
     }
 
     setAnimating(false)
+    isProcessingMove.current = false
   }
 
   function undo() {
-    if (!previousState || animating) {
+    if (!previousState || animating || isProcessingMove.current) {
       return
     }
     const currentState = { board, points, moves }
@@ -462,7 +476,7 @@ export default function Game() {
   }
 
   async function clickTile(position: Position) {
-    if (animating || isPaused) {
+    if (animating || isPaused || isProcessingMove.current) {
       return
     }
     if (!selectedFrom) {
@@ -505,7 +519,10 @@ export default function Game() {
         }
       }
       if (isGameOver(board)) {
-        if (player && animationSpeed == "instant") {
+        if (
+          player &&
+          (animationSpeed == "instant" || animationSpeed == "turbo")
+        ) {
           await CapacitorGameConnect.unlockAchievement({
             achievementID: "speedDemon",
           })
@@ -580,6 +597,9 @@ export default function Game() {
   const [grid, animate] = useAnimate()
 
   function resetBoard(): void {
+    if (isProcessingMove.current) {
+      return
+    }
     const newSeed = Math.floor(Math.random() * 1000000)
     setSeed(newSeed) // Set the component's seed state
 
@@ -607,14 +627,16 @@ export default function Game() {
       if (!hintPositions) {
         return
       }
-      await new Promise((r) => setTimeout(r, 100))
+      if (animationSpeed !== "turbo") {
+        await new Promise((r) => setTimeout(r, animationDuration * 1000))
+      }
       await handleSwapTiles(hintPositions[0], hintPositions[1]) // Use the new handleSwapTiles
     }
 
     if (autoplay && !animating) {
       autoPlay()
     }
-  }, [autoplay, board, animating, getPositionsThatAlmostMatch, handleSwapTiles]) // Add handleSwapTiles to dependencies
+  }, [autoplay, board, animating, getPositionsThatAlmostMatch, handleSwapTiles, animationSpeed, animationDuration]) // Add animationSpeed and animationDuration to dependencies
 
   function getHint(): void {
     const hintPositions = getPositionsThatAlmostMatch(board)
@@ -753,6 +775,7 @@ export default function Game() {
                   <Tile
                     tile={board[x][y]}
                     selected={selectedFrom?.x == x && selectedFrom.y == y}
+                    animationDuration={animationDuration}
                   />
                 </motion.button>
               )),
