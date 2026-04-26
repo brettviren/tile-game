@@ -22,8 +22,15 @@ export type GameState = {
   lastUnpausedTime?: number // New
 }
 
-function getRandomTileId(randomFunc: RandomFunc): number {
-  return randomFunc()
+// Monotonically increasing counter for tile IDs.
+// IDs only need to be unique for React's reconciler; they must not come from
+// the seeded PRNG because the LCG overflows JS safe-integer range, which
+// causes the generator to enter short cycles and produce duplicate IDs.
+// Duplicate React keys leave "removed" tiles in the DOM while also inserting
+// their replacements, producing the misshapen/extra-tile board corruption bug.
+let _nextTileId = 0
+function nextTileId(): number {
+  return _nextTileId++
 }
 
 function getRandomTileValue(randomFunc: RandomFunc): number {
@@ -32,7 +39,7 @@ function getRandomTileValue(randomFunc: RandomFunc): number {
 
 export function getRandomTile(randomFunc: RandomFunc): Tile {
   return {
-    id: getRandomTileId(randomFunc),
+    id: nextTileId(),
     value: getRandomTileValue(randomFunc),
     removed: false,
   }

@@ -45,6 +45,7 @@ This fork has the following completed and planned changes:
 - [ ] History: plot scores, duration and moves vs time.
 - [ ] Store all moves.
 - [ ] Replay games.
+- [ ] Link to download data as JSON.
 - [ ] Get android app with this fork building.
 
 To build and run locally:

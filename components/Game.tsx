@@ -418,50 +418,52 @@ export default function Game() {
   async function handleSwapTiles(a: Position, b: Position) { // Renamed from swapTiles
     if (isProcessingMove.current || isPaused) return
     isProcessingMove.current = true
-    if (moves === 0 && !startTime) {
-      setStartTime(Date.now())
-      setLastUnpausedTime(Date.now()) // Initialize lastUnpausedTime on first move
-      // No need to set seed here, it's already managed by useEffect or resetBoard
-    }
-    setPreviousState({ board, points, moves })
-    // Use the seededSwapTile returned from useBoard
-    const boards = seededSwapTile(a, b, board) 
-    setMoves((moves) => moves + 1)
-    setAnimating(true)
-    let soundsPlayed = 0
-    if (animationSpeed === "instant") {
-      const lastBoard = boards[boards.length - 1]
-      const totalPoints = boards.reduce((acc, b) => acc + b.points, 0)
-      setBoard(lastBoard.board)
-      if (totalPoints > 0 && !muted) {
-        play(1.0)
+    try {
+      if (moves === 0 && !startTime) {
+        setStartTime(Date.now())
+        setLastUnpausedTime(Date.now()) // Initialize lastUnpausedTime on first move
+        // No need to set seed here, it's already managed by useEffect or resetBoard
       }
-      setPoints((currentPoints) => currentPoints + totalPoints)
-      // Small delay to ensure state is committed and browser has a tick to render
-      await new Promise((r) => setTimeout(r, 50))
-    } else {
-      for (const [index, newBoard] of boards.entries()) {
-        setBoard(newBoard.board)
-        if (newBoard.points > 0 && !muted) {
-          play(Math.min(Math.pow(2, 0.4 * soundsPlayed), 2.5))
-          soundsPlayed++
+      setPreviousState({ board, points, moves })
+      // Use the seededSwapTile returned from useBoard
+      const boards = seededSwapTile(a, b, board)
+      setMoves((moves) => moves + 1)
+      setAnimating(true)
+      let soundsPlayed = 0
+      if (animationSpeed === "instant") {
+        const lastBoard = boards[boards.length - 1]
+        const totalPoints = boards.reduce((acc, b) => acc + b.points, 0)
+        setBoard(lastBoard.board)
+        if (totalPoints > 0 && !muted) {
+          play(1.0)
         }
-        setPoints((currentPoints) => currentPoints + newBoard.points)
-        if (index < boards.length - 1) {
-            await new Promise((r) => setTimeout(r, animationDuration * 1000))
+        setPoints((currentPoints) => currentPoints + totalPoints)
+        // Small delay to ensure state is committed and browser has a tick to render
+        await new Promise((r) => setTimeout(r, 50))
+      } else {
+        for (const [index, newBoard] of boards.entries()) {
+          setBoard(newBoard.board)
+          if (newBoard.points > 0 && !muted) {
+            play(Math.min(Math.pow(2, 0.4 * soundsPlayed), 2.5))
+            soundsPlayed++
+          }
+          setPoints((currentPoints) => currentPoints + newBoard.points)
+          if (index < boards.length - 1) {
+              await new Promise((r) => setTimeout(r, animationDuration * 1000))
+          }
         }
       }
+      if (boardContains2048Tile(board)) {
+        // There's a bug with this achievement that causes the leaderboards/achievements to crash.
+        // For now we'll just save it. We can award the user when the bug is fixed.
+        // This guy seems to have the same problem: https://stackoverflow.com/questions/77574849/gamekit-not-showing-with-swiftui
+        // (We don't await this, cause we don't want the animations delayed)
+        saveToPersistedState({ key: "2048achievement", value: "true" })
+      }
+    } finally {
+      setAnimating(false)
+      isProcessingMove.current = false
     }
-    if (boardContains2048Tile(board)) {
-      // There's a bug with this achievement that causes the leaderboards/achievements to crash.
-      // For now we'll just save it. We can award the user when the bug is fixed.
-      // This guy seems to have the same problem: https://stackoverflow.com/questions/77574849/gamekit-not-showing-with-swiftui
-      // (We don't await this, cause we don't want the animations delayed)
-      saveToPersistedState({ key: "2048achievement", value: "true" })
-    }
-
-    setAnimating(false)
-    isProcessingMove.current = false
   }
 
   function undo() {
