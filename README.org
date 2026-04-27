@@ -11,11 +11,9 @@ You can play this fork at
 
 - https://brettviren.github.io/tile-game/
 
-Caveat: I may update this site from time to time.  There is no attempt to do
-schema evolution on the data stored in your browser's Local Storage for this
-site.  Old data and a new site can be inconsistent and the only recourse is to
-go to Inspect->Storage->Local Storage, select this site and delete.  When I stop
-messing about, I'll remove this caveat.
+There is also an APK, see below.  See also caveats at the end.
+
+* The path I'm walking
 
 This fork has the following completed and planned changes:
 
@@ -40,15 +38,21 @@ This fork has the following completed and planned changes:
 - [X] History: sort by duration.
 - [X] Make "instant" speed closer to actually being instantaneous and add "turbo" as a faster version of the old "instant".
 - [X] Fixed color transition delay (reduced from 700ms to match animation speed)
+- [X] Fix regression where the boar refuses to accept legal moves (missing try/finally)
+- [X] Fix regression where new tiles "push down" the board, corrupting it and causing general chaos (PRNG silently overflows max safe integer which screws up tile IDs).
 - [ ] Convert from local storage to indexdb
 - [ ] History: plot distributions of scores, duration and moves.
 - [ ] History: plot scores, duration and moves vs time.
 - [ ] Store all moves.
 - [ ] Replay games.
 - [ ] Link to download data as JSON.
-- [ ] Get android app with this fork building.
+- [X] Get android app with this fork building again.
+- [ ] Include APK as release product.
+- [ ] Automate building APK and web.
 
-To build and run locally:
+* Build web
+
+Run locally:
 
 #+begin_example
 $ deno task build
@@ -68,7 +72,40 @@ To publish to github pages.
 ./publish.sh
 #+end_example
 
-Caveat: this fork is largely vibe coded.  I do look at the produced code for
-sanity but there is no guarantee that this fork does not ruin all that you hold
-dear.  Please do not pester the original author with any problems you may
-encounter (nor me for that matter).
+* Build the APK
+
+** Prep
+
+Something like:
+
+#+begin_example
+mkdir -p ~/Android/Sdk/cmdline-tools
+cd ~/Android/Sdk/cmdline-tools
+curl -O https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+unzip commandlinetools-linux-11076708_latest.zip
+mv cmdline-tools latest
+#+end_example
+
+** Build and install to phone
+
+#+begin_example
+export ANDROID_HOME=$HOME/Android/Sdk
+./build-apk.sh
+adb uninstall dk.bellika.exponentile
+adb install android/app/build/outputs/apk/debug/app-debug.apk
+#+end_example
+
+* Caveats
+
+I may update the web app on github.io from time to time.  There is no attempt to
+do schema evolution on the data stored in your browser's Local Storage for this
+site.  Old data and a new site can be inconsistent.  Sometimes a hard reload is
+enough and sometimes one needs to go to Inspect->Storage->Local Storage, select
+the site and delete.  When I stop messing about, I'll remove this caveat.
+
+This fork is largely vibe coded.  I do look at the produced code for sanity but
+there is no guarantee that this fork does not ruin all that you hold dear.
+Please do not pester the original author with any problems you may encounter
+(nor me for that matter) with thisfork.  But, do thank him for providing a deeply engrossing game!
+
+
