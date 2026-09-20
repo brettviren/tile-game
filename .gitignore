@@ -40,3 +40,6 @@ next-env.d.ts
 # auto-play trial results
 trials.ndjson
 *.apk
+AGENTS.md
+CLAUDE.md
+deno.lock
