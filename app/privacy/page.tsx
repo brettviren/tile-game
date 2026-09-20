@@ -2,9 +2,9 @@
 import Button from "@/components/Button"
 import { useAudioPlayer } from "@/hooks/useAudioPlayer"
 import { useEffect } from "react"
+import { BASE_PATH as basePath } from "@/lib/basePath"
 
 export default function Home() {
-  const basePath = process.env.NEXT_PUBLIC_BASE_PATH || ""
   const { play } = useAudioPlayer([
     `${basePath}/sounds/blop1.mp3`,
     `${basePath}/sounds/blop2.mp3`,

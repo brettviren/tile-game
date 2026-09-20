@@ -37,13 +37,27 @@ import {
   getFromPersistedState, // Import getFromPersistedState
 } from "@/utils/storedState"
 import { boardContains2048Tile } from "@/utils/achievements"
+import {
+  DEFAULT_SPEC,
+  type StrategySpec,
+  combineStrategies,
+  formatSpec,
+} from "@/lib/strategies"
+import { enumerateCandidates, tileCounts } from "@/lib/engine"
 import Button from "./Button"
 import ShareButton from "./ShareButton"
 import Link from "next/link"
-import { History, Volume2, VolumeX, Maximize, Minimize } from "lucide-react"
+import {
+  History,
+  FlaskConical,
+  Volume2,
+  VolumeX,
+  Maximize,
+  Minimize,
+} from "lucide-react"
 import { useAudioPlayer } from "@/hooks/useAudioPlayer"
+import { BASE_PATH as basePath } from "@/lib/basePath"
 
-const basePath = process.env.NEXT_PUBLIC_BASE_PATH || ""
 const AUDIO_FILES = [
   `${basePath}/sounds/blop1.mp3`,
   `${basePath}/sounds/blop2.mp3`,
@@ -622,23 +636,59 @@ export default function Game() {
     setPreviousState(undefined)
   }
   const [autoplay, setAutoplay] = useState(false)
+  const [autoSpec, setAutoSpec] = useState<StrategySpec>(DEFAULT_SPEC)
+
+  // The strategy lab hands a selection over here when asked to watch a game,
+  // and otherwise we fall back to the strategy last chosen there.
+  useEffect(() => {
+    async function loadSpec() {
+      const handed = sessionStorage.getItem("autoPlaySpec")
+      if (handed) {
+        sessionStorage.removeItem("autoPlaySpec")
+        try {
+          setAutoSpec(JSON.parse(handed) as StrategySpec)
+          setAutoplay(true)
+          return
+        } catch (e) {
+          console.error("Unreadable autoPlaySpec, using the default:", e)
+        }
+      }
+      const { loadSpec: loadStoredSpec } = await import("@/lib/trialStoreWeb")
+      setAutoSpec(await loadStoredSpec<StrategySpec>(DEFAULT_SPEC))
+    }
+    loadSpec()
+  }, [])
 
   useEffect(() => {
     async function autoPlay() {
-      const hintPositions = getPositionsThatAlmostMatch(board)
-      if (!hintPositions) {
+      const candidates = enumerateCandidates(board)
+      if (candidates.length === 0) {
+        setAutoplay(false)
+        return
+      }
+      let choice
+      try {
+        choice = combineStrategies(autoSpec)(candidates, {
+          board,
+          counts: tileCounts(board),
+          moveNumber: moves,
+          policyRandom: Math.random,
+        })
+      } catch (e) {
+        console.error("Cannot apply the chosen strategy:", e)
+        setAutoplay(false)
         return
       }
       if (animationSpeed !== "instant") {
         await new Promise((r) => setTimeout(r, animationDuration * 1000))
       }
-      await handleSwapTiles(hintPositions[0], hintPositions[1]) // Use the new handleSwapTiles
+      await handleSwapTiles(choice.from, choice.to)
     }
 
     if (autoplay && !animating) {
       autoPlay()
     }
-  }, [autoplay, board, animating, getPositionsThatAlmostMatch, handleSwapTiles, animationSpeed, animationDuration]) // Add animationSpeed and animationDuration to dependencies
+  }, [autoplay, autoSpec, board, moves, animating, handleSwapTiles, animationSpeed, animationDuration]) // Add animationSpeed and animationDuration to dependencies
 
   function getHint(): void {
     const hintPositions = getPositionsThatAlmostMatch(board)
@@ -845,11 +895,14 @@ export default function Game() {
             </button>
           </div>
 
-          {debug && (
-            <div>
+          {(debug || autoplay) && (
+            <div className="flex flex-wrap items-center gap-3">
               <Button onClick={() => setAutoplay(!autoplay)}>
                 Autoplay {autoplay ? "on" : "off"}
               </Button>
+              <span className="font-mono text-xs opacity-60">
+                {formatSpec(autoSpec)} ({autoSpec.combine})
+              </span>
             </div>
           )}
         </div>
@@ -907,6 +960,9 @@ export default function Game() {
         )}
         <Link href="/history" aria-label="Game History">
           <History className="h-6 w-6" />
+        </Link>
+        <Link href="/lab" aria-label="Strategy Lab">
+          <FlaskConical className="h-6 w-6" />
         </Link>
 
         {!muted ? (

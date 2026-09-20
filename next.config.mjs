@@ -2,11 +2,11 @@
 const nextConfig = {
   output: 'export',
   trailingSlash: true,
-  // Use NEXT_PUBLIC_BASE_PATH if explicitly set (even to ""); fall back to
-  // "/tile-game" for production builds (GitHub Pages) and "" for dev.
-  basePath: 'NEXT_PUBLIC_BASE_PATH' in process.env
-    ? process.env.NEXT_PUBLIC_BASE_PATH
-    : (process.env.NODE_ENV === 'production' ? '/tile-game' : ''),
+  // Serve from the site root unless a subpath is asked for explicitly.
+  // Only the GitHub Pages build sets NEXT_PUBLIC_BASE_PATH (to "/tile-game");
+  // dev, the local static build and the Capacitor builds all want the root.
+  // Note `??`, not `||`: an explicit empty base path is a setting, not a gap.
+  basePath: process.env.NEXT_PUBLIC_BASE_PATH ?? '',
   images: {
     unoptimized: true,
   },

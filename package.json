@@ -7,8 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "syncapp": "next build && npx cap sync",
-    "sync:android": "next build && npx cap sync android",
+    "syncapp": "NEXT_PUBLIC_BASE_PATH= next build && npx cap sync",
+    "sync:android": "NEXT_PUBLIC_BASE_PATH= next build && npx cap sync android",
     "open:android": "npx cap open android",
     "test": "vitest"
   },

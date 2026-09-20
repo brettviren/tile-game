@@ -2,6 +2,7 @@ import { finishedTutorial, isTutorialDone } from "@/utils/storedState"
 import Image from "next/image"
 import { AnimatePresence, motion } from "framer-motion"
 import { useEffect, useState } from "react"
+import { BASE_PATH } from "@/lib/basePath"
 
 export default function Tutorial() {
   const [doneTutorial, setDoneTutorial] = useState(false)
@@ -37,7 +38,7 @@ export default function Tutorial() {
     >
       <div className="h-max w-full rounded border border-white p-2">
         <Image
-          src={`${process.env.NEXT_PUBLIC_BASE_PATH || ""}/tutorial1.jpg`}
+          src={`${BASE_PATH}/tutorial1.jpg`}
           alt="Step 1: Swap tiles to match three or more"
           fill
           sizes="100vw"
@@ -65,7 +66,7 @@ export default function Tutorial() {
     >
       <div className="h-max w-full rounded border border-white p-2">
         <Image
-          src={`${process.env.NEXT_PUBLIC_BASE_PATH || ""}/tutorial2.jpg`}
+          src={`${BASE_PATH}/tutorial2.jpg`}
           alt="Step 2: Larger matches result in higher value tiles"
           fill
           sizes="100vw"

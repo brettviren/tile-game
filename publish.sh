@@ -2,9 +2,14 @@
 set -e
 set -x
 
-# 1. Build the app for the /tile-game subpath
+# 1. Build the app for the /tile-game subpath.
+#
+# build:pages sets NEXT_PUBLIC_BASE_PATH=/tile-game for both halves of the
+# build: `next build` for the app, and scripts/build.ts for the landing page.
+# Both must agree, or the landing page links to routes whose assets are not
+# where the page looks for them.
 echo "Building for /tile-game..."
-NEXT_PUBLIC_BASE_PATH=/tile-game deno task build
+deno task build:pages
 
 # 2. Add .nojekyll for GitHub Pages to correctly serve _next directory
 touch out/.nojekyll
@@ -24,7 +29,7 @@ rm -rf ./pages-deploy
 git worktree add -f ./pages-deploy pages
 
 # 5. Replace contents of the branch with the new build output
-rm -rf ./pages-deploy/*
+find ./pages-deploy -mindepth 1 -maxdepth 1 -not -name .git -exec rm -rf {} +
 cp -rp out/. ./pages-deploy/
 
 # 6. Commit and push changes

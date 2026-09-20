@@ -1,32 +1,70 @@
-import { expect, test, vi } from "vitest"
-// import { type Board, type Tile, moveTilesDown, copyBoard } from "@/hooks/useBoard"
-import * as useBoard from "../hooks/useBoard"
+import { expect, test } from "vitest"
+import {
+  type Board,
+  type MatchedTile,
+  moveTilesDown,
+} from "@/hooks/useBoard"
 
-const testBoard: useBoard.Board = Array.from({ length: 3 }).map((_, x) => {
-  return Array.from({ length: 3 }).map((_, y) => {
-    return { id: 3 * y + x, value: y }
-  })
-})
-test("move tile horizontals moves one", () => {
-  const mock = vi
-    .spyOn(useBoard, "getRandomTile")
-    .mockReturnValue({ id: 100, value: 100 })
-  const result = useBoard.moveTilesDown(
-    [
-      { x: 1, y: 1 },
-      { x: 2, y: 1 },
-    ],
-    testBoard,
+// board[x][y]: x is the column, y grows downward from the top.
+function testBoard(): Board {
+  return Array.from({ length: 3 }, (_, x) =>
+    Array.from({ length: 3 }, (_, y) => ({
+      id: 3 * y + x,
+      value: y + 1,
+      removed: false as const,
+    })),
   )
-  let expected = useBoard.copyBoard(testBoard)
-  // expected[1][1] = testBoard[1][0]
-  // expected[2][1] = testBoard[2][0]
+}
 
-  // expected[1][0] = { id: 100, value: 100 }
-  // expected[2][0] = { id: 100, value: 100 }
-  expected[0][0] = { id: 100, value: 100 }
+// Fresh tiles take value floor(0 * 4) + 1.
+const alwaysZero = () => 0
 
-  expect(result).toEqual(expected)
+test("removed tiles are marked and the survivors fall", () => {
+  const board = testBoard()
+  const match: MatchedTile = {
+    newValue: 9,
+    origin: { x: 1, y: 0 },
+    matchedTiles: [
+      { x: 1, y: 1 },
+      { x: 1, y: 2 },
+    ],
+    match: true,
+  }
 
-  mock.mockRestore()
+  const [marked, after] = moveTilesDown([match], board, alwaysZero)
+
+  expect(marked[1][1].removed).toBe(true)
+  expect(marked[1][2].removed).toBe(true)
+  expect(marked[0][1].removed).toBe(false)
+
+  // The seed tile falls to the bottom of the run it cleared.
+  expect(after[1][2].id).toBe(board[1][0].id)
+  // Its holes are refilled from the top.
+  expect(after[1][0].value).toBe(1)
+  expect(after[1][1].value).toBe(1)
+  // Untouched columns are left alone.
+  expect(after[0]).toEqual(board[0])
+  expect(after[2]).toEqual(board[2])
+})
+
+test("a horizontal match drops one tile in each affected column", () => {
+  const board = testBoard()
+  const match: MatchedTile = {
+    newValue: 4,
+    origin: { x: 0, y: 2 },
+    matchedTiles: [
+      { x: 1, y: 2 },
+      { x: 2, y: 2 },
+    ],
+    match: true,
+  }
+
+  const [, after] = moveTilesDown([match], board, alwaysZero)
+
+  for (const x of [1, 2]) {
+    expect(after[x][2].id).toBe(board[x][1].id)
+    expect(after[x][1].id).toBe(board[x][0].id)
+    expect(after[x][0].value).toBe(1)
+  }
+  expect(after[0]).toEqual(board[0])
 })

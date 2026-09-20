@@ -82,7 +82,7 @@ export function copyBoard(board: Board): Board {
   return board.slice().map((column) => column.slice())
 }
 
-function isAdjacent(a: Position, b: Position): boolean {
+export function isAdjacent(a: Position, b: Position): boolean {
   return (
     (a.x == b.x && Math.abs(a.y - b.y) == 1) ||
     (a.y == b.y && Math.abs(a.x - b.x) == 1)
@@ -144,13 +144,13 @@ function getSameTilesRight(position: Position, board: Board): Array<Position> {
   return result
 }
 
-type MatchedTile = {
+export type MatchedTile = {
   newValue: number
   matchedTiles: Position[]
   origin: Position
   match: true
 }
-function getMatchedTile(
+export function getMatchedTile(
   position: Position,
   board: Board,
 ): MatchedTile | { match: false } {
@@ -192,7 +192,7 @@ export type BoardPoints = { board: Board; points: number }
 /**
  * The main thing. Returns a list of boards to be animated through
  */
-function swapTile(from: Position, to: Position, board: Board, randomFunc: RandomFunc): BoardPoints[] {
+export function swapTile(from: Position, to: Position, board: Board, randomFunc: RandomFunc): BoardPoints[] {
   const swappedBoard = copyBoard(board)
   swappedBoard[to.x][to.y] = board[from.x][from.y]
   swappedBoard[from.x][from.y] = board[to.x][to.y]
@@ -369,7 +369,7 @@ export function isGameOver(board: Board): boolean {
 /**
  * Returns two tiles that can be swapped to make a match
  */
-function getPositionsThatAlmostMatch(
+export function getPositionsThatAlmostMatch(
   board: Board,
 ): [Position, Position] | undefined {
   for (let x = 0; x < board.length; x++) {

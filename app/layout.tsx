@@ -3,6 +3,7 @@ import "./globals.css"
 import { Toaster } from "@/components/ui/toaster"
 import { Viewport } from "next"
 import ServiceWorkerRegister from "@/components/ServiceWorkerRegister"
+import { BASE_PATH } from "@/lib/basePath"
 
 const inter = Inter({ subsets: ["latin"] })
 export const viewport: Viewport = {
@@ -17,9 +18,7 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
-  const basePath =
-    process.env.NEXT_PUBLIC_BASE_PATH ||
-    (process.env.NODE_ENV === "production" ? "/tile-game" : "")
+  const basePath = BASE_PATH
   return (
     <html lang="en" className="h-full w-full overscroll-none">
       <head>

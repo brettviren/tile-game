@@ -50,14 +50,37 @@ This fork has the following completed and planned changes:
 - [ ] Include APK as release product.
 - [ ] Automate building APK and web.
 
-* Build web
+* Build modes
 
-Run locally:
+The app is a Next.js static export, and every way of running it differs in just
+two things: the *base path* it is served from, and whether the root of =out/=
+holds the landing page or the game itself.
+
+| Mode                | Command                                     | Base path    | Root of =out/=      |
+|---------------------+---------------------------------------------+--------------+---------------------|
+| Dev server          | =deno task dev=                             | (root)       | n/a, localhost:3000 |
+| Local static        | =deno task build= then =deno task serve=    | (root)       | landing page        |
+| GitHub pages        | =./publish.sh= or =deno task build:pages=   | =/tile-game= | landing page        |
+| Android / Capacitor | =./build-apk.sh= or =pnpm run sync:android= | (root)       | the game            |
+
+The base path comes from the =NEXT_PUBLIC_BASE_PATH= environment variable.  It
+defaults to the site root, and only the github pages build sets it.  A build
+whose parts disagree about the base path produces pages that load with none of
+their scripts, which shows up as a blank white page.
+
+The two Capacitor modes deliberately run =next build= on its own rather than
+=deno task build=, because the latter also runs =scripts/build.ts=, which
+overwrites =out/index.html= with the landing page.  The Android webview opens
+=https://localhost/= and should arrive at the game rather than at a landing page.
+
+** Run locally
 
 #+begin_example
 $ deno task build
 $ deno task serve
 #+end_example
+
+Then visit http://localhost:8081/.
 
 Note, the build sometimes hangs while =deno= and other tools show no CPU usage.  I don't know the reason but this seems to clear up what is going bad:
 
@@ -66,11 +89,42 @@ $ rm -r out
 $ deno task build
 #+end_example
 
-To publish to github pages.
+** Publish to github pages
 
 #+begin_example
 ./publish.sh
 #+end_example
+
+This runs =deno task build:pages=, which sets =NEXT_PUBLIC_BASE_PATH=/tile-game=
+for both the app and the landing page, then force-pushes =out/= to the =pages=
+branch through a temporary worktree.
+
+** A note on the service worker
+
+The installed (PWA) version caches through =public/sw.js=.  Pages are fetched
+network first so that a rebuild is picked up, while the hashed build assets are
+served from the cache.  After changing the cached shell, bump =CACHE_NAME= in
+that file; old caches are then dropped when the new worker activates.  A browser
+that still holds an older worker may need a hard reload once.
+
+* Auto-play strategies
+
+Strategies for maximising the score are written up in [[file:strategies.md][strategies.md]], along
+with the reasoning and the measurements behind them.  Each is encoded as a
+function and can be run automatically, either from the command line or from the
+strategy lab in the web app (the flask icon beside the history icon).
+
+#+begin_example
+$ ./exponentile-trials --help
+$ ./exponentile-trials strategies
+$ ./exponentile-trials -n 50 -j 8 -s cheapest:3,company:2,first:1
+$ ./exponentile-trials summary
+#+end_example
+
+Results are appended to =trials.ndjson=, one game per line, recording the seed,
+duration, moves and final score.  The =summary= command reports the mean and
+standard deviation of each, grouped by strategy.  The web version keeps its own
+results in the browser.
 
 * Build the APK
 

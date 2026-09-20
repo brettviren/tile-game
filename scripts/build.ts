@@ -22,8 +22,11 @@ const BUILD_TIMESTAMP = new Date().toLocaleString("en-US", {
 
 // ── Base path ─────────────────────────────────────────────────────────────────
 
-const BASE_PATH = Deno.env.get("NEXT_PUBLIC_BASE_PATH") ??
-  (Deno.env.get("NODE_ENV") === "production" ? "/tile-game" : "");
+// Must agree with next.config.mjs and lib/basePath.ts: the root unless a
+// subpath is asked for explicitly. This script runs as its own process and so
+// cannot see the NODE_ENV that `next build` sets for itself, which is exactly
+// how the landing page and the app once ended up disagreeing.
+const BASE_PATH = Deno.env.get("NEXT_PUBLIC_BASE_PATH") ?? "";
 
 // ── HTML ──────────────────────────────────────────────────────────────────────
 

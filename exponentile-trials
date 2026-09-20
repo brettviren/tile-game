@@ -1,0 +1,135 @@
+#!/usr/bin/env bash
+#
+# Run strategy-driven auto-play trials of exponentile and report on the results.
+#
+# A thin wrapper over scripts/trials.ts: it owns the help text and the short
+# options, then hands normalised long options to Deno.
+
+set -euo pipefail
+
+here="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+prog="$(basename -- "${BASH_SOURCE[0]}")"
+
+usage() {
+    cat <<EOF
+$prog - play exponentile automatically and collect statistics
+
+USAGE
+    $prog [command] [options]
+
+COMMANDS
+    run           Play games and append the results to the store (default).
+    list          Print every stored result.
+    summary       Print mean and standard deviation, grouped by strategy.
+    strategies    List the strategies available and what each prefers.
+    clear         Delete the store.
+
+OPTIONS
+    -n, --games N        Number of games to play. Default 1.
+    -j, --threads N      Play on N workers at once. Default 1.
+    -s, --strategy SPEC  Strategies to apply, as a comma separated list of
+                         NAME or NAME:WEIGHT. Default "first".
+    -c, --combine MODE   How to fold several strategies together, either
+                         "lexico" or "weighted". Default "lexico".
+        --seed N         Base seed. Game i uses N+i, so a whole batch replays
+                         exactly. Omit for fresh random seeds.
+        --size N         Board edge length. Default 8.
+        --max-moves N    Abandon a game after this many moves. Default 100000.
+    -o, --store PATH     Result store, newline delimited JSON.
+                         Default "trials.ndjson" in the current directory.
+    -t, --tag NAME       Label the games of this run, for later grouping.
+    -v, --verbose        Print every move as it is played.
+    -q, --quiet          Print only the closing summary.
+        --json           Emit JSON instead of a table.
+        --no-store       Report the run without recording it.
+    -h, --help           Show this help.
+
+COMBINING STRATEGIES
+    In "lexico" mode the strategies are applied in descending weight order and
+    each settles the ties left by the one before it. This is usually what you
+    want: a main policy with tie-breakers behind it.
+
+        $prog -n 50 -s cheapest:3,company:2,first:1
+
+    In "weighted" mode every strategy's preference is rescaled across the moves
+    on offer and the results are summed with the given weights, so strategies
+    genuinely trade off against one another.
+
+        $prog -n 50 -s cheapest:3,junction:1 -c weighted
+
+    Either way the board scan order settles any remaining tie, so a run with a
+    fixed --seed replays exactly.
+
+EXAMPLES
+    # One game with the original upper-left scanning autoplay.
+    $prog
+
+    # Fifty games on eight workers, tagged for later comparison.
+    $prog -n 50 -j 8 -s inband:2,cheapest:1 -t inband-trial
+
+    # Compare everything recorded so far.
+    $prog summary
+
+    # Reproduce a game that scored well.
+    $prog -n 1 --seed 1234 -s greedy --no-store -v
+EOF
+}
+
+command=""
+args=()
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -h|--help)
+            usage
+            exit 0
+            ;;
+        -n|--games)      args+=("--games=${2:?--games needs a number}"); shift 2 ;;
+        -j|--threads)    args+=("--threads=${2:?--threads needs a number}"); shift 2 ;;
+        -s|--strategy)   args+=("--strategy=${2:?--strategy needs a spec}"); shift 2 ;;
+        -c|--combine)    args+=("--combine=${2:?--combine needs a mode}"); shift 2 ;;
+        -o|--store)      args+=("--store=${2:?--store needs a path}"); shift 2 ;;
+        -t|--tag)        args+=("--tag=${2:?--tag needs a name}"); shift 2 ;;
+        --seed)          args+=("--seed=${2:?--seed needs a number}"); shift 2 ;;
+        --size)          args+=("--size=${2:?--size needs a number}"); shift 2 ;;
+        --max-moves)     args+=("--max-moves=${2:?--max-moves needs a number}"); shift 2 ;;
+        -v|--verbose)    args+=("--verbose"); shift ;;
+        -q|--quiet)      args+=("--quiet"); shift ;;
+        --json)          args+=("--json"); shift ;;
+        --no-store)      args+=("--no-store"); shift ;;
+        --*=*)           args+=("$1"); shift ;;
+        -*)
+            echo "$prog: unknown option '$1'" >&2
+            echo "Try '$prog --help'." >&2
+            exit 2
+            ;;
+        *)
+            if [[ -n "$command" ]]; then
+                echo "$prog: unexpected argument '$1' after command '$command'" >&2
+                exit 2
+            fi
+            command="$1"
+            shift
+            ;;
+    esac
+done
+
+case "${command:=run}" in
+    run|list|summary|strategies|clear) ;;
+    *)
+        echo "$prog: unknown command '$command'" >&2
+        echo "Try '$prog --help'." >&2
+        exit 2
+        ;;
+esac
+
+if ! command -v deno >/dev/null 2>&1; then
+    echo "$prog: deno is required but was not found on PATH" >&2
+    exit 1
+fi
+
+exec deno run \
+    --allow-read --allow-write --allow-env \
+    --config "$here/deno.json" \
+    "$here/scripts/trials.ts" \
+    "$command" "${args[@]}"
